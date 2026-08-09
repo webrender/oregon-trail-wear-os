@@ -1,0 +1,3 @@
+# Dedicated Oregon Trail build, not a general Apple II emulator
+
+We're building this as a single-game experience purpose-tuned for Oregon Trail, not a general-purpose Apple II/IIgs emulator that happens to default-load it. A general emulator would need a generic control-remapping UI, generic file-loading for arbitrary software, and would invite "why can't I load other games" feature pressure. Going dedicated lets every control and screen be hand-fit to this one game's needs, keeps the surface area small for a watch, and avoids inviting general-emulator distribution scrutiny later. Reversing this later would mean re-deriving generic input/loading abstractions we deliberately skipped.
