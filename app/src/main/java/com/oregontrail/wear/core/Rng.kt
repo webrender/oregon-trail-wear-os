@@ -61,6 +61,21 @@ class Rng(private var state: Long) {
     fun snapshot(): Long = state
 
     /**
+     * Value equality on the generator's state.
+     *
+     * Without this, identity equality would silently break [GameState]'s generated
+     * `equals`: two states that are identical in every respect would compare unequal
+     * because they hold different `Rng` instances. That matters for round-trip tests,
+     * and for Compose, which uses equality to decide whether anything needs redrawing.
+     */
+    override fun equals(other: Any?): Boolean =
+        this === other || (other is Rng && state == other.state)
+
+    override fun hashCode(): Int = state.hashCode()
+
+    override fun toString(): String = "Rng(state=$state)"
+
+    /**
      * An independent generator continuing from this one's current state.
      *
      * This is what keeps [GameState] honestly immutable despite holding a mutable RNG:
