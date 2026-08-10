@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import com.oregontrail.wear.BuildConfig
 import com.oregontrail.wear.core.Profession
 import com.oregontrail.wear.core.TrailDate
 import com.oregontrail.wear.ui.GameController
+import com.oregontrail.wear.ui.Screen
 import com.oregontrail.wear.ui.components.Gap
 import com.oregontrail.wear.ui.components.MenuChip
 import com.oregontrail.wear.ui.components.RotaryColumn
@@ -48,6 +50,10 @@ fun TitleScreen(controller: GameController) {
             primary = !controller.hasSave,
             onClick = { controller.startNewGame() },
         )
+        if (BuildConfig.DEBUG) {
+            Gap(6)
+            MenuChip(label = "Debug: jump to...", onClick = { controller.go(Screen.Debug) })
+        }
     }
 }
 

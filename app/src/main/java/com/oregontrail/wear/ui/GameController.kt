@@ -328,6 +328,26 @@ class GameController(private val repository: SaveRepository) {
         append(".")
     }
 
+    // ---- Debug ----
+
+    /**
+     * Debug-only: replaces the run with [next] and jumps straight to [destination],
+     * bypassing the normal game loop. Used by [Screen.Debug] so a screen's art/layout
+     * can be checked without playing to it. Clears anything that would otherwise take
+     * priority over [destination] in [com.oregontrail.wear.ui.OregonTrailApp] — an
+     * event or encounter left over from whatever the player was doing before opening
+     * the debug menu, say.
+     */
+    fun debugJumpTo(next: GameState, destination: Screen) {
+        commit(next)
+        pendingEvents = emptyList()
+        pendingEncounter = null
+        crossingResult = null
+        crossingMethod = null
+        ticker = null
+        screen = destination
+    }
+
     // ---- Internals ----
 
     /**

@@ -56,6 +56,13 @@ sealed interface Screen {
 
     /** "Are you sure?" before [GameController.abandonRun] — there is no undo. */
     data object ConfirmAbandon : Screen
+
+    /**
+     * Debug-only: jump straight to any landmark's arrival/river screen without playing
+     * to it. Reachable only from [Screen.Title] behind `BuildConfig.DEBUG` — see
+     * [com.oregontrail.wear.ui.screens.DebugScreen].
+     */
+    data object Debug : Screen
 }
 
 /**
