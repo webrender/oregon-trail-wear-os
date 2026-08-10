@@ -1,6 +1,7 @@
 package com.oregontrail.wear.ui.art
 
 import com.oregontrail.wear.core.Animal
+import com.oregontrail.wear.core.Encounter
 import com.oregontrail.wear.core.GameEvent
 import com.oregontrail.wear.core.Good
 import com.oregontrail.wear.core.LandmarkId
@@ -86,4 +87,11 @@ object ArtNames {
     const val HUNT_BULLET: String = "hunt_bullet"
     const val HUNTER_STAND: String = "hunter_stand"
     const val HUNTER_SHOOT: String = "hunter_shoot"
+
+    /** The portrait for whoever the party has met on the trail. */
+    fun forEncounter(encounter: Encounter): String = when (encounter) {
+        is Encounter.Traveler -> "portrait_pioneer"
+        is Encounter.Trade -> "portrait_trader"
+        is Encounter.Guide -> "portrait_guide"
+    }
 }

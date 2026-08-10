@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.oregontrail.wear.core.CrossingMethod
 import com.oregontrail.wear.core.CrossingResult
+import com.oregontrail.wear.core.Encounter
 import com.oregontrail.wear.core.Outcome
 import com.oregontrail.wear.core.Rivers
 import com.oregontrail.wear.core.Scoring
@@ -28,6 +29,7 @@ import com.oregontrail.wear.ui.components.RotaryScrollColumn
 import com.oregontrail.wear.ui.components.ScreenText
 import com.oregontrail.wear.ui.components.ScreenTitle
 import com.oregontrail.wear.ui.components.StaticScreen
+import com.oregontrail.wear.ui.describeQuantity
 import com.oregontrail.wear.ui.money
 import com.oregontrail.wear.ui.short
 import com.oregontrail.wear.ui.theme.AppleII
@@ -306,5 +308,64 @@ fun GameOverScreen(controller: GameController) {
                 controller.startNewGame()
             },
         )
+    }
+}
+
+/**
+ * Someone met on the trail. A portrait rather than a scene, since the point of an
+ * encounter is the person, not the place — see [Encounter].
+ */
+@Composable
+fun EncounterScreen(controller: GameController) {
+    val encounter = controller.pendingEncounter ?: return
+    val state = controller.game
+
+    RotaryScrollColumn {
+        PixelArtImage(
+            name = ArtNames.forEncounter(encounter),
+            modifier = Modifier.size(96.dp),
+            maxScale = 3,
+        )
+        Gap(8)
+        when (encounter) {
+            is Encounter.Traveler -> {
+                ScreenTitle("A fellow traveller")
+                ScreenText(encounter.tip, color = AppleII.White)
+                Gap(12)
+                MenuChip(
+                    label = "Continue on",
+                    primary = true,
+                    onClick = { controller.dismissEncounter() },
+                )
+            }
+
+            is Encounter.Trade -> {
+                ScreenTitle("A trader")
+                ScreenText(
+                    "${encounter.wants.describeQuantity(encounter.wantsQuantity)} for " +
+                        encounter.gives.describeQuantity(encounter.givesQuantity),
+                    color = AppleII.White,
+                )
+                Gap(10)
+                MenuChip(label = "Trade", primary = true, onClick = { controller.acceptTrade() })
+                Gap(6)
+                MenuChip(label = "Decline", onClick = { controller.dismissEncounter() })
+            }
+
+            is Encounter.Guide -> {
+                ScreenTitle("A guide")
+                ScreenText("Offers advice for a fee", color = AppleII.White)
+                Gap(10)
+                MenuChip(
+                    label = "Hire",
+                    secondaryLabel = money(encounter.costCents),
+                    primary = true,
+                    enabled = state.inventory.cashCents >= encounter.costCents,
+                    onClick = { controller.hireGuide() },
+                )
+                Gap(6)
+                MenuChip(label = "Decline", onClick = { controller.dismissEncounter() })
+            }
+        }
     }
 }

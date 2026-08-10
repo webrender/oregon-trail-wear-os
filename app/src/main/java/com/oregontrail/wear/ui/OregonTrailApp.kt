@@ -3,6 +3,7 @@ package com.oregontrail.wear.ui
 import androidx.compose.runtime.Composable
 import com.oregontrail.wear.ui.screens.ArrivalScreen
 import com.oregontrail.wear.ui.screens.CrossingResultScreen
+import com.oregontrail.wear.ui.screens.EncounterScreen
 import com.oregontrail.wear.ui.screens.EventScreen
 import com.oregontrail.wear.ui.screens.ForkScreen
 import com.oregontrail.wear.ui.screens.GameOverScreen
@@ -34,6 +35,7 @@ fun OregonTrailApp(controller: GameController) {
         when {
             controller.crossingResult != null -> CrossingResultScreen(controller)
             controller.pendingEvents.isNotEmpty() -> EventScreen(controller)
+            controller.pendingEncounter != null -> EncounterScreen(controller)
             else -> Destination(controller)
         }
     }

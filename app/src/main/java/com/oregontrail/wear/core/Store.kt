@@ -32,6 +32,33 @@ data class Inventory(
 
     fun consumeFood(pounds: Int): Inventory =
         copy(foodPounds = (foodPounds - pounds).coerceAtLeast(0))
+
+    /** How much of [good] the wagon carries, in that good's internal unit. */
+    fun amountOf(good: Good): Int = when (good) {
+        Good.OXEN -> oxen
+        Good.FOOD -> foodPounds
+        Good.CLOTHING -> clothingSets
+        Good.BULLETS -> bullets
+        Good.SPARE_WHEEL -> spareWheels
+        Good.SPARE_AXLE -> spareAxles
+        Good.SPARE_TONGUE -> spareTongues
+    }
+
+    /**
+     * Adds (or, with a negative [delta], removes) some amount of [good], floored at zero.
+     *
+     * For adjustments that aren't a purchase — [Encounters] trades goods without cash
+     * changing hands, so [Store.buy]'s price-and-purchase-unit machinery doesn't apply.
+     */
+    fun adjust(good: Good, delta: Int): Inventory = when (good) {
+        Good.OXEN -> copy(oxen = (oxen + delta).coerceAtLeast(0))
+        Good.FOOD -> copy(foodPounds = (foodPounds + delta).coerceAtLeast(0))
+        Good.CLOTHING -> copy(clothingSets = (clothingSets + delta).coerceAtLeast(0))
+        Good.BULLETS -> copy(bullets = (bullets + delta).coerceAtLeast(0))
+        Good.SPARE_WHEEL -> copy(spareWheels = (spareWheels + delta).coerceAtLeast(0))
+        Good.SPARE_AXLE -> copy(spareAxles = (spareAxles + delta).coerceAtLeast(0))
+        Good.SPARE_TONGUE -> copy(spareTongues = (spareTongues + delta).coerceAtLeast(0))
+    }
 }
 
 /** The goods a store sells. Prices are per unit of [purchaseUnit]. */

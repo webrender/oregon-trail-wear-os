@@ -19,7 +19,12 @@ sealed interface GameEvent {
     data object PartyLost : GameEvent
 }
 
-data class DayResult(val state: GameState, val events: List<GameEvent>)
+data class DayResult(
+    val state: GameState,
+    val events: List<GameEvent>,
+    /** Someone met on the road today, if anyone, awaiting the player's decision. */
+    val encounter: Encounter? = null,
+)
 
 /**
  * The turn engine: one function that advances the world by a day, plus the discrete
@@ -104,7 +109,19 @@ object TurnEngine {
             s = s.copy(outcome = Outcome.PartyLost)
         }
 
-        return DayResult(s, events)
+        // Rolled from a derived generator — see Rng.derive — rather than the day's own
+        // `rng`, so adding or retuning encounters can never perturb the exact sequence
+        // of weather/illness/event rolls every other day depends on, including in
+        // fixed-seed tests far downstream of this one.
+        var encounter: Encounter? = null
+        if (!s.isOver) {
+            val encounterRng = s.rng.derive(s.dayOfJourney * 97L + 13)
+            if (encounterRng.chance(Encounters.CHANCE)) {
+                encounter = Encounters.roll(s, encounterRng)
+            }
+        }
+
+        return DayResult(s, events, encounter)
     }
 
     /** Rests in place for a day: no travel, food is still eaten, health recovers. */

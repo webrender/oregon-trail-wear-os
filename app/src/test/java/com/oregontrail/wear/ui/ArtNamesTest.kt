@@ -2,6 +2,7 @@ package com.oregontrail.wear.ui
 
 import com.oregontrail.wear.core.Ailment
 import com.oregontrail.wear.core.Animal
+import com.oregontrail.wear.core.Encounter
 import com.oregontrail.wear.core.GameEvent
 import com.oregontrail.wear.core.Good
 import com.oregontrail.wear.core.LandmarkId
@@ -83,6 +84,18 @@ class ArtNamesTest {
         assertArtExists(ArtNames.HUNT_BULLET, "hunt bullet")
         assertArtExists(ArtNames.HUNTER_STAND, "hunter standing")
         assertArtExists(ArtNames.HUNTER_SHOOT, "hunter shooting")
+    }
+
+    @Test
+    fun `every kind of encounter has a portrait`() {
+        val sample = listOf(
+            Encounter.Traveler("test"),
+            Encounter.Trade(Good.FOOD, 1, Good.BULLETS, 1),
+            Encounter.Guide(costCents = 100, healthBenefit = 5),
+        )
+        for (encounter in sample) {
+            assertArtExists(ArtNames.forEncounter(encounter), "encounter $encounter")
+        }
     }
 
     @Test

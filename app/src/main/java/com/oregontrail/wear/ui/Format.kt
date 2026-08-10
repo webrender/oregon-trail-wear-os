@@ -70,6 +70,23 @@ val Good.purchaseCeiling: Int
     }
 
 /**
+ * A quantity of [good] in its own internal unit — "3 oxen", "40 lb food", "20 bullets" —
+ * as opposed to [shortUnit], which is the *purchase* unit sold at the store (a box of 20
+ * bullets, a yoke of 2 oxen). [com.oregontrail.wear.core.Encounters] trades goods
+ * directly in the internal unit, so a trade offer needs this instead — labelling 33
+ * individual bullets "33 box" would overstate the offer twentyfold.
+ */
+fun Good.describeQuantity(quantity: Int): String = when (this) {
+    Good.OXEN -> "$quantity oxen"
+    Good.FOOD -> "$quantity lb food"
+    Good.CLOTHING -> "$quantity clothing"
+    Good.BULLETS -> "$quantity bullets"
+    Good.SPARE_WHEEL -> "$quantity wheels"
+    Good.SPARE_AXLE -> "$quantity axles"
+    Good.SPARE_TONGUE -> "$quantity tongues"
+}
+
+/**
  * The date with the month abbreviated and the year dropped.
  *
  * Used on the lines beneath a scene, where the full "September 21, 1848" runs to 18

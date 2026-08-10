@@ -6,6 +6,8 @@ import androidx.compose.runtime.setValue
 import com.oregontrail.wear.core.Animal
 import com.oregontrail.wear.core.CrossingMethod
 import com.oregontrail.wear.core.CrossingResult
+import com.oregontrail.wear.core.Encounter
+import com.oregontrail.wear.core.Encounters
 import com.oregontrail.wear.core.GameEvent
 import com.oregontrail.wear.core.GameState
 import com.oregontrail.wear.core.Good
@@ -74,6 +76,15 @@ class GameController(private val repository: SaveRepository) {
     var lastDayMiles: Int by mutableStateOf(0)
         private set
 
+    /**
+     * Someone met on the road today, awaiting a decision.
+     *
+     * Not part of [state] and not saved: like [pendingEvents], losing an unresolved
+     * encounter to a process death is the same as never having met them.
+     */
+    var pendingEncounter: Encounter? by mutableStateOf(null)
+        private set
+
     private var chosenProfession: Profession? = null
     private var arrivedThisDay = false
 
@@ -128,6 +139,7 @@ class GameController(private val repository: SaveRepository) {
         }
         state = loaded
         pendingEvents = emptyList()
+        pendingEncounter = null
         ticker = null
         screen = resumeScreen(loaded)
     }
@@ -136,6 +148,7 @@ class GameController(private val repository: SaveRepository) {
         repository.clear()
         state = null
         pendingEvents = emptyList()
+        pendingEncounter = null
         ticker = null
         crossingResult = null
         crossingMethod = null
@@ -179,7 +192,7 @@ class GameController(private val repository: SaveRepository) {
         get() = state?.let { it.inventory.oxen < GameState.MINIMUM_OXEN } ?: false
 
     /** True while something is waiting to be read and travel should hold. */
-    val isPaused: Boolean get() = pendingEvents.isNotEmpty()
+    val isPaused: Boolean get() = pendingEvents.isNotEmpty() || pendingEncounter != null
 
     fun advanceDay() {
         val current = state ?: return
@@ -188,6 +201,7 @@ class GameController(private val repository: SaveRepository) {
         val result = TurnEngine.advanceDay(current)
         commit(result.state)
         absorb(result.events)
+        pendingEncounter = result.encounter
     }
 
     fun restOneDay() {
@@ -253,6 +267,25 @@ class GameController(private val repository: SaveRepository) {
     fun chooseRoute(to: LandmarkId) {
         commit(TurnEngine.chooseRoute(game, to))
         screen = resumeScreen(game)
+    }
+
+    // ---- Encounters ----
+
+    /** Waves off a traveller, or declines a trade or a guide's offer. */
+    fun dismissEncounter() {
+        pendingEncounter = null
+    }
+
+    fun acceptTrade() {
+        val trade = pendingEncounter as? Encounter.Trade ?: return
+        commit(Encounters.accept(game, trade))
+        pendingEncounter = null
+    }
+
+    fun hireGuide() {
+        val guide = pendingEncounter as? Encounter.Guide ?: return
+        commit(Encounters.hire(game, guide))
+        pendingEncounter = null
     }
 
     // ---- Hunting ----
