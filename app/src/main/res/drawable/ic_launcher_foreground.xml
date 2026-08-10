@@ -1,7 +1,19 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- The wagon from icon_wagon.pix (see app/src/main/assets/art), rasterised once at a
-     fixed size with hard nearest-neighbour edges — the same wagon the supplies readout
-     uses in-game, rather than art invented just for the launcher. -->
+     fixed size with hard nearest-neighbour edges — the same wagon the in-game supplies
+     readout uses.
+
+     The scale here (~26% of the 432px canvas) was calibrated empirically, not from
+     Android's documented adaptive-icon safe zone (~61% diameter): a concentric-ring
+     test target showed Wear's own circular "Recents" card avatar keeps only the
+     innermost ~30% of the icon, cropping the rest away entirely. At the safe-zone
+     scale the wagon's wheels — near the bottom of its silhouette — were cropped off,
+     leaving what read as flat horizontal bands rather than a wagon. A wheel-only icon
+     was tried next since it's inherently round, but its outline is drawn in black,
+     which is invisible against the avatar chip's own black background — only the
+     orange hub survived. The wagon's white canvas and orange body actually contrast
+     against that background, so it was kept, just shrunk to fit inside the real
+     safe zone instead of the documented one. -->
 <bitmap xmlns:android="http://schemas.android.com/apk/res/android"
     android:src="@drawable/ic_launcher_wagon"
     android:gravity="center" />

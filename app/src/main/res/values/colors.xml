@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<resources>
-    <!-- AppleII.Black — the same background every screen in the game uses. -->
-    <color name="launcher_background">#000000</color>
-</resources>
