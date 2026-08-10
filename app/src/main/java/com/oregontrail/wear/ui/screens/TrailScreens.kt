@@ -56,6 +56,22 @@ private const val WAGON_X = (128 - 56) / 2
 private const val WAGON_Y = 30
 
 /**
+ * Off to the right of the wagon, clear of its walk cycle and the terrain's usual busy
+ * middle third.
+ */
+private const val MARKER_X = 104
+private const val MARKER_Y = 38
+
+/**
+ * Roughly one day in [MARKER_PERIOD], the party passes a roadside marker — another
+ * party's grave, or a signpost. Purely a flavour beat, so it's derived straight from
+ * [GameState.dayOfJourney] rather than rolled from the run's own RNG: nothing about it
+ * needs to be unpredictable or to survive a save, only to not flicker on and off between
+ * recompositions of the same day.
+ */
+private const val MARKER_PERIOD = 13
+
+/**
  * The travel screen: a wagon, a landscape, and days going by.
  *
  * Days advance on a timer rather than on a tap. This is the screen the player looks at
@@ -115,7 +131,12 @@ fun TrailScreen(controller: GameController) {
                 // 128-wide scene. Full width would floor to x3 as well but leave the art
                 // touching the bezel.
                 modifier = Modifier.fillMaxWidth(0.85f).aspectRatio(2f),
-                sprites = listOf(Sprite(wagon, WAGON_X, WAGON_Y)),
+                sprites = buildList {
+                    add(Sprite(wagon, WAGON_X, WAGON_Y))
+                    if (state.dayOfJourney > 0 && state.dayOfJourney % MARKER_PERIOD == 0) {
+                        add(Sprite(ArtNames.TRAIL_MARKER, MARKER_X, MARKER_Y))
+                    }
+                },
             )
             Gap(4)
             Text(
