@@ -2,6 +2,7 @@ package com.oregontrail.wear.ui
 
 import androidx.compose.runtime.Composable
 import com.oregontrail.wear.ui.screens.ArrivalScreen
+import com.oregontrail.wear.ui.screens.ConfirmAbandonScreen
 import com.oregontrail.wear.ui.screens.CrossingResultScreen
 import com.oregontrail.wear.ui.screens.EncounterScreen
 import com.oregontrail.wear.ui.screens.EventScreen
@@ -59,5 +60,6 @@ private fun Destination(controller: GameController) {
         Screen.River -> RiverScreen(controller)
         Screen.Fork -> ForkScreen(controller)
         Screen.GameOver -> GameOverScreen(controller)
+        Screen.ConfirmAbandon -> ConfirmAbandonScreen(controller)
     }
 }

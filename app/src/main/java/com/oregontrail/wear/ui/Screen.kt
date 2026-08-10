@@ -53,6 +53,9 @@ sealed interface Screen {
 
     /** The run is over — arrived, or everyone died. */
     data object GameOver : Screen
+
+    /** "Are you sure?" before [GameController.abandonRun] — there is no undo. */
+    data object ConfirmAbandon : Screen
 }
 
 /**

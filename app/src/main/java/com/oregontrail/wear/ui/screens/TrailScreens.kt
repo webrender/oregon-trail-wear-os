@@ -30,6 +30,7 @@ import com.oregontrail.wear.ui.components.Gap
 import com.oregontrail.wear.ui.components.IconValue
 import com.oregontrail.wear.ui.components.MenuChip
 import com.oregontrail.wear.ui.components.RotaryColumn
+import com.oregontrail.wear.ui.components.RotaryScrollColumn
 import com.oregontrail.wear.ui.components.ScreenText
 import com.oregontrail.wear.ui.components.ScreenTitle
 import com.oregontrail.wear.ui.components.StaticScreen
@@ -226,6 +227,44 @@ fun TrailMenuScreen(controller: GameController) {
                 )
             }
         }
+        item {
+            MenuChip(
+                label = "Abandon journey",
+                secondaryLabel = "Ends this run",
+                onClick = { controller.go(Screen.ConfirmAbandon) },
+            )
+        }
+    }
+}
+
+/**
+ * "Are you sure?" — [GameController.abandonRun] clears the save with no way back, so
+ * this is the one action in the trail menu that doesn't fire on the first tap. The safe
+ * option is [primary] rather than the destructive one, matching how a confirmation
+ * dialog should default: a mis-tap should have to happen twice to actually cost a run.
+ */
+@Composable
+fun ConfirmAbandonScreen(controller: GameController) {
+    RotaryScrollColumn {
+        ScreenTitle("Abandon journey?")
+        ScreenText(
+            "This ends your run for good. There is no going back.",
+            color = AppleII.Orange,
+        )
+        Gap(12)
+        MenuChip(
+            label = "No, keep going",
+            primary = true,
+            onClick = { controller.go(Screen.TrailMenu) },
+        )
+        Gap(6)
+        MenuChip(
+            label = "Yes, start over",
+            onClick = {
+                controller.abandonRun()
+                controller.startNewGame()
+            },
+        )
     }
 }
 
