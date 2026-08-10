@@ -74,6 +74,11 @@ class ArtNamesTest {
     }
 
     @Test
+    fun `the store interior exists`() {
+        assertArtExists(ArtNames.STORE_INTERIOR, "store interior")
+    }
+
+    @Test
     fun `every animal has both frames of a run cycle`() {
         for (animal in Animal.entries) {
             for (frame in 0..1) {

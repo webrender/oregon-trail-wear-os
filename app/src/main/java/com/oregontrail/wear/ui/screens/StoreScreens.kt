@@ -32,9 +32,10 @@ import com.oregontrail.wear.core.Good
 import com.oregontrail.wear.ui.GameController
 import com.oregontrail.wear.ui.Screen
 import com.oregontrail.wear.ui.art.ArtNames
+import com.oregontrail.wear.ui.art.Scene
 import com.oregontrail.wear.ui.components.Gap
 import com.oregontrail.wear.ui.components.MenuChip
-import com.oregontrail.wear.ui.components.RotaryColumn
+import com.oregontrail.wear.ui.components.RotaryScrollColumn
 import com.oregontrail.wear.ui.components.ScreenText
 import com.oregontrail.wear.ui.components.ScreenTitle
 import com.oregontrail.wear.ui.money
@@ -50,13 +51,13 @@ fun StoreScreen(controller: GameController) {
     val store = controller.store ?: return
     val enoughOxen = state.inventory.oxen >= GameState.MINIMUM_OXEN
 
-    RotaryColumn {
-        item { ScreenTitle(store.name) }
-        item {
-            ScreenText("You have ${money(state.inventory.cashCents)}", color = AppleII.Green)
-        }
-        items(Good.entries.size) { index ->
-            val good = Good.entries[index]
+    RotaryScrollColumn {
+        Scene(background = ArtNames.STORE_INTERIOR)
+        Gap(4)
+        ScreenTitle(store.name)
+        ScreenText("You have ${money(state.inventory.cashCents)}", color = AppleII.Green)
+        Gap(8)
+        for (good in Good.entries) {
             MenuChip(
                 label = good.displayName,
                 secondaryLabel = "${money(store.priceCents(good))}/${good.shortUnit}" +
@@ -64,15 +65,14 @@ fun StoreScreen(controller: GameController) {
                 iconArt = ArtNames.good(good),
                 onClick = { controller.go(Screen.StoreItem(good)) },
             )
+            Gap(6)
         }
-        item {
-            MenuChip(
-                label = if (enoughOxen) "Take to the trail" else "You need 2 oxen",
-                primary = true,
-                enabled = enoughOxen,
-                onClick = { controller.depart() },
-            )
-        }
+        MenuChip(
+            label = if (enoughOxen) "Take to the trail" else "You need 2 oxen",
+            primary = true,
+            enabled = enoughOxen,
+            onClick = { controller.depart() },
+        )
     }
 }
 

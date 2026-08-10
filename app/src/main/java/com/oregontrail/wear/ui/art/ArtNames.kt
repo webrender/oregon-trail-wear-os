@@ -81,6 +81,9 @@ object ArtNames {
     /** A roadside grave or signpost, shown in passing every so often on the trail. */
     const val TRAIL_MARKER: String = "trail_marker"
 
+    /** Shelves and a counter, behind the goods list at the store. */
+    const val STORE_INTERIOR: String = "store_interior"
+
     /** One frame (0 or 1) of [animal]'s run cycle. */
     fun animal(animal: Animal, frame: Int): String =
         "animal_${animal.name.lowercase()}_${frame + 1}"
