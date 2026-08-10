@@ -5,6 +5,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -29,6 +30,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.foundation.lazy.ScalingLazyColumn
 import androidx.wear.compose.foundation.lazy.ScalingLazyListScope
@@ -40,7 +42,10 @@ import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.PositionIndicator
 import androidx.wear.compose.material.Scaffold
 import androidx.wear.compose.material.Text
+import com.oregontrail.wear.ui.art.BLEED_SCENE_HEIGHT
+import com.oregontrail.wear.ui.art.BLEED_SCENE_WIDTH
 import com.oregontrail.wear.ui.art.PixelArtImage
+import com.oregontrail.wear.ui.art.Scene
 import com.oregontrail.wear.ui.theme.AppleII
 import kotlinx.coroutines.launch
 
@@ -101,6 +106,26 @@ fun RotaryColumn(
 @Composable
 fun RotaryScrollColumn(
     modifier: Modifier = Modifier,
+    /**
+     * Leading clearance above the first child. The 48.dp default pushes a standard
+     * 128x64 scene (384 device pixels wide at x3) down to roughly the widest part of the
+     * display instead of letting the bezel eat its top corners — see the padding comment
+     * below. Pass 0.dp for a scene authored taller and bled to the top edge on purpose,
+     * relying on the bezel to crop its corners into the round shape instead of stopping
+     * short of it.
+     */
+    topPadding: Dp = 48.dp,
+    /**
+     * Side clearance for every child. The 16.dp default keeps chips and text clear of
+     * the curved edges. Pass 0.dp for a screen whose first child is a scene meant to
+     * bleed to the true screen edges — `verticalScroll` clips its content to this
+     * column's own measured bounds, so a child can't escape this padding on its own
+     * (a custom-layout "negative padding" trick was tried and gets clipped back down);
+     * the column has to not reserve the padding in the first place. Wrap the remaining
+     * (non-scene) children in their own `Modifier.padding(horizontal = 16.dp)` column
+     * to keep them off the bezel.
+     */
+    horizontalPadding: Dp = 16.dp,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     val scrollState = rememberScrollState()
@@ -125,7 +150,44 @@ fun RotaryScrollColumn(
                 // wide, and the visible circle is only that wide across its middle — so
                 // the leading padding pushes the first scene down to roughly the widest
                 // part of the display instead of letting the bezel eat its top corners.
-                .padding(start = 16.dp, top = 48.dp, end = 16.dp, bottom = 32.dp),
+                .padding(
+                    start = horizontalPadding,
+                    top = topPadding,
+                    end = horizontalPadding,
+                    bottom = 32.dp,
+                ),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            content = content,
+        )
+    }
+}
+
+/**
+ * A screen that leads with a scene bled to the true screen edges (top, left, and
+ * right), the round display cropping whatever the wider/taller canvas overshoots into
+ * the correct curved silhouette — see docs/art-brief.md's "Full-bleed scenes" section.
+ * [background] must be a [BLEED_SCENE_WIDTH]x[BLEED_SCENE_HEIGHT] asset, not a
+ * standard 128x64 one, or it'll be centred with the usual black margins instead.
+ *
+ * Everything after the scene keeps the normal 16dp side clearance, via a plain
+ * [Column] wrapping [content] — see [RotaryScrollColumn]'s `horizontalPadding` doc for
+ * why that padding can't just live on the outer scrolling column here.
+ */
+@Composable
+fun SceneScrollColumn(
+    background: String?,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit,
+) {
+    RotaryScrollColumn(modifier = modifier, topPadding = 0.dp, horizontalPadding = 0.dp) {
+        Scene(
+            background = background,
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(BLEED_SCENE_WIDTH.toFloat() / BLEED_SCENE_HEIGHT),
+        )
+        Column(
+            modifier = Modifier.padding(horizontal = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             content = content,
         )

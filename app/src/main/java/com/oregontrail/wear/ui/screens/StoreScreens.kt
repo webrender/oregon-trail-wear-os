@@ -32,10 +32,9 @@ import com.oregontrail.wear.core.Good
 import com.oregontrail.wear.ui.GameController
 import com.oregontrail.wear.ui.Screen
 import com.oregontrail.wear.ui.art.ArtNames
-import com.oregontrail.wear.ui.art.Scene
 import com.oregontrail.wear.ui.components.Gap
 import com.oregontrail.wear.ui.components.MenuChip
-import com.oregontrail.wear.ui.components.RotaryScrollColumn
+import com.oregontrail.wear.ui.components.SceneScrollColumn
 import com.oregontrail.wear.ui.components.ScreenText
 import com.oregontrail.wear.ui.components.ScreenTitle
 import com.oregontrail.wear.ui.money
@@ -51,8 +50,7 @@ fun StoreScreen(controller: GameController) {
     val store = controller.store ?: return
     val enoughOxen = state.inventory.oxen >= GameState.MINIMUM_OXEN
 
-    RotaryScrollColumn {
-        Scene(background = ArtNames.STORE_INTERIOR)
+    SceneScrollColumn(background = ArtNames.STORE_INTERIOR) {
         Gap(4)
         ScreenTitle(store.name)
         ScreenText("You have ${money(state.inventory.cashCents)}", color = AppleII.Green)

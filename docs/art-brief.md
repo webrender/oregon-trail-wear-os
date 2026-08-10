@@ -84,6 +84,50 @@ the bezel. The sizes below are chosen against that constraint:
 Art is always scaled by a **whole number** with no smoothing, so a 128x64 scene is
 exactly 384x192 device pixels. Do not design anything expecting fractional scaling.
 
+## Full-bleed scenes (in progress — not yet applied beyond the store)
+
+The standard 128x64 scene deliberately stops short of the bezel: it's centred in a
+384x192 band with black on all sides, and only the *middle* of that band reaches the
+edge of the visible circle. A prototype on the Store screen proved a scene can instead
+bleed all the way to the true bezel edge — top, left, and right — with the round
+display itself cropping whatever the wider/taller canvas overshoots into the correct
+curved silhouette. It reads much better: no dead black gap between the art and the
+title. The engineering side of this is done and generic (`Scene` sizes off whatever
+backdrop it's given), but it only works if the *art* leaves the right margins — most
+existing landmark/river art has mountains, forts, rock spires, or wagons that already
+run close to the old 128-wide edge, which a full-bleed canvas would now expose rather
+than hide. Redoing those is the blocker before rolling this out past the store.
+
+**New canvas: 150x96** (up from 128x64), rendered at the same x3 scale = 450x288
+device pixels. Shipped reference: `store_interior_tall.pix` — read it before doing
+this for anything else.
+
+- **Top 32 rows are the extension.** They should read as a natural continuation of
+  whatever's at the top of the standard 128x64 version of the same scene (sky, in every
+  existing asset) — not a hard seam. A cloud or gradient can continue up into this
+  band; it doesn't have to be flat, unlike the mechanical padding used for the store's
+  wall.
+- **The outer ~13 columns on *both* sides, on every single row, must stay background
+  only.** This is the one hard rule that's new relative to the standard format: in the
+  128-wide version, a shape was allowed to run all the way to column 0 or 127 because
+  the bezel hid it. In the 150-wide version, those columns are visible, so anything
+  that used to touch the old edge (a fort wall, a mountain ridge, a rock spire) needs
+  to be redrawn to stay clear of the new one, with only flat/background colour in that
+  margin. Silhouettes can still fill the *original* 128-wide area edge to edge — the
+  new columns are pure extension, not more room to draw in.
+- Keep the existing 128x64 composition intact within the new canvas's centre — this is
+  additive margin, not a redesign of the scene itself.
+
+**Assets that need this treatment** (same filenames, replacing the 128x64 versions —
+every screen that references them gets the same small layout update once they land):
+
+`lm_independence`, `lm_kansas_river`, `lm_big_blue_river`, `lm_fort_kearney`,
+`lm_chimney_rock`, `lm_fort_laramie`, `lm_independence_rock`, `lm_south_pass`,
+`lm_green_river`, `lm_fort_bridger`, `lm_soda_springs`, `lm_fort_hall`,
+`lm_snake_river`, `lm_fort_boise`, `lm_blue_mountains`, `lm_fort_walla_walla`,
+`lm_the_dalles`, `lm_columbia_river`, `lm_oregon_city`, `river_ford`, `river_caulk`,
+`river_ferry`, `river_capsize`, `wagon_arrival` — 24 in total.
+
 ## The assets
 
 73 in total. Priorities are about unblocking work, not importance — **P0 makes the game

@@ -22,10 +22,10 @@ import com.oregontrail.wear.ui.GameController
 import com.oregontrail.wear.ui.Screen
 import com.oregontrail.wear.ui.art.ArtNames
 import com.oregontrail.wear.ui.art.PixelArtImage
-import com.oregontrail.wear.ui.art.Scene
 import com.oregontrail.wear.ui.components.Gap
 import com.oregontrail.wear.ui.components.MenuChip
 import com.oregontrail.wear.ui.components.RotaryScrollColumn
+import com.oregontrail.wear.ui.components.SceneScrollColumn
 import com.oregontrail.wear.ui.components.ScreenText
 import com.oregontrail.wear.ui.components.ScreenTitle
 import com.oregontrail.wear.ui.components.StaticScreen
@@ -47,8 +47,7 @@ fun ArrivalScreen(controller: GameController) {
     val state = controller.game
     val landmark = state.currentLandmark
 
-    RotaryScrollColumn {
-        Scene(background = ArtNames.landmark(landmark.id))
+    SceneScrollColumn(background = ArtNames.landmark(landmark.id)) {
         Gap(4)
         ScreenTitle(landmark.name)
         ScreenText(
@@ -91,8 +90,7 @@ fun RiverScreen(controller: GameController) {
     val landmark = state.currentLandmark
     val available = conditions.available(state.inventory.cashCents)
 
-    RotaryScrollColumn {
-        Scene(background = ArtNames.landmark(landmark.id))
+    SceneScrollColumn(background = ArtNames.landmark(landmark.id)) {
         Gap(4)
         ScreenTitle(landmark.name.removeSuffix(" Crossing"))
         ScreenText(
@@ -135,8 +133,7 @@ fun CrossingResultScreen(controller: GameController) {
     val result = controller.crossingResult ?: return
     val method = controller.crossingMethod
 
-    RotaryScrollColumn {
-        Scene(background = crossingArt(result, method, controller))
+    SceneScrollColumn(background = crossingArt(result, method, controller)) {
         Gap(4)
         ScreenTitle(crossingHeadline(result))
         ScreenText(crossingDetail(result), color = AppleII.White)
@@ -195,8 +192,7 @@ fun ForkScreen(controller: GameController) {
     val state = controller.game
     val landmark = state.currentLandmark
 
-    RotaryScrollColumn {
-        Scene(background = ArtNames.landmark(landmark.id))
+    SceneScrollColumn(background = ArtNames.landmark(landmark.id)) {
         Gap(4)
         ScreenTitle("Which way?")
         Gap(8)
@@ -251,63 +247,75 @@ fun EventScreen(controller: GameController) {
 fun GameOverScreen(controller: GameController) {
     val state = controller.game
 
-    RotaryScrollColumn {
-        when (state.outcome) {
-            Outcome.Arrived -> {
-                Scene(background = "wagon_arrival")
-                Gap(4)
-                ScreenTitle("Oregon City")
+    // The two outcomes get different containers rather than a shared one with
+    // conditional padding: Arrived leads with a full-bleed scene, PartyLost with a
+    // small centred portrait, and those two shapes don't share a sensible common
+    // padding scheme. The trailing "New Journey" chip is repeated in both rather than
+    // forced into one — it's three lines, not worth threading a shared container for.
+    when (state.outcome) {
+        Outcome.Arrived -> SceneScrollColumn(background = "wagon_arrival") {
+            Gap(4)
+            ScreenTitle("Oregon City")
+            ScreenText(
+                "${state.date.short} · ${state.totalMiles} miles",
+                color = AppleII.Green,
+                small = true,
+            )
+            ScreenText(
+                "Party health: ${state.party.health.displayName}",
+                color = AppleIIChrome.MutedGreen,
+                small = true,
+            )
+            Gap(12)
+
+            val score = Scoring.score(state)
+            for (line in score.lines) {
                 ScreenText(
-                    "${state.date.short} · ${state.totalMiles} miles",
-                    color = AppleII.Green,
-                    small = true,
-                )
-                ScreenText(
-                    "Party health: ${state.party.health.displayName}",
+                    // The scoring table spells the party's health out inside its
+                    // first label, which is too long for a centred line down here.
+                    // Health already has its own line above, so drop the aside.
+                    "${line.label.substringBefore(" (")}: ${line.points}",
                     color = AppleIIChrome.MutedGreen,
                     small = true,
                 )
-                Gap(12)
-
-                val score = Scoring.score(state)
-                for (line in score.lines) {
-                    ScreenText(
-                        // The scoring table spells the party's health out inside its
-                        // first label, which is too long for a centred line down here.
-                        // Health already has its own line above, so drop the aside.
-                        "${line.label.substringBefore(" (")}: ${line.points}",
-                        color = AppleIIChrome.MutedGreen,
-                        small = true,
-                    )
-                }
-                Gap(6)
-                ScreenText(
-                    "${score.subtotal} x ${score.multiplier} (${score.professionName})",
-                    color = AppleII.White,
-                )
-                ScreenTitle("${score.total} points")
             }
+            Gap(6)
+            ScreenText(
+                "${score.subtotal} x ${score.multiplier} (${score.professionName})",
+                color = AppleII.White,
+            )
+            ScreenTitle("${score.total} points")
 
-            Outcome.PartyLost, null -> {
-                PixelArtImage(name = "tombstone", modifier = Modifier.size(120.dp), maxScale = 3)
-                Gap(8)
-                ScreenTitle("The journey ends")
-                ScreenText(
-                    "Everyone died, ${state.totalMiles} miles out.",
-                    color = AppleII.White,
-                )
-            }
+            Gap(16)
+            MenuChip(
+                label = "New Journey",
+                primary = true,
+                onClick = {
+                    controller.abandonRun()
+                    controller.startNewGame()
+                },
+            )
         }
 
-        Gap(16)
-        MenuChip(
-            label = "New Journey",
-            primary = true,
-            onClick = {
-                controller.abandonRun()
-                controller.startNewGame()
-            },
-        )
+        Outcome.PartyLost, null -> RotaryScrollColumn {
+            PixelArtImage(name = "tombstone", modifier = Modifier.size(120.dp), maxScale = 3)
+            Gap(8)
+            ScreenTitle("The journey ends")
+            ScreenText(
+                "Everyone died, ${state.totalMiles} miles out.",
+                color = AppleII.White,
+            )
+
+            Gap(16)
+            MenuChip(
+                label = "New Journey",
+                primary = true,
+                onClick = {
+                    controller.abandonRun()
+                    controller.startNewGame()
+                },
+            )
+        }
     }
 }
 

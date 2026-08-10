@@ -25,6 +25,15 @@ const val SCENE_WIDTH = 128
 const val SCENE_HEIGHT = 64
 
 /**
+ * The "full-bleed" scene grid — a scene authored with enough margin to reach the true
+ * screen edges (top and both sides) instead of stopping short of the bezel. See
+ * docs/art-brief.md's "Full-bleed scenes" section, and `SceneScrollColumn` in the
+ * `ui.components` package, which is what actually renders one of these.
+ */
+const val BLEED_SCENE_WIDTH = 150
+const val BLEED_SCENE_HEIGHT = 96
+
+/**
  * A sprite placed by its top-left corner, in scene coordinates rather than pixels.
  *
  * [flip] mirrors the art horizontally in place, for a sprite authored facing one way
@@ -64,6 +73,14 @@ fun Scene(
     val backdrop = remember(background) {
         background?.let { ArtLoader.loadOrNull(context, it) }
     }
+    // Sized off the backdrop's real dimensions rather than the standard grid, so a
+    // backdrop authored at a non-standard size (a scene bled further into the bezel,
+    // say) still scales and centres correctly. Every asset in the game today is
+    // exactly SCENE_WIDTH x SCENE_HEIGHT, so this is a no-op everywhere except a
+    // deliberately oversized backdrop. Sprite coordinates still assume the standard
+    // grid, so this only fully makes sense for a backdrop with no sprites over it.
+    val artWidth = backdrop?.width ?: SCENE_WIDTH
+    val artHeight = backdrop?.height ?: SCENE_HEIGHT
     val loaded = remember(sprites) {
         sprites.mapNotNull { sprite ->
             ArtLoader.loadOrNull(context, sprite.name)?.let { it to sprite }
@@ -81,10 +98,10 @@ fun Scene(
         Modifier.pointerInput(Unit) {
             detectTapGestures { offset ->
                 val scale = fittingScale(
-                    SCENE_WIDTH, SCENE_HEIGHT, size.width.toFloat(), size.height.toFloat(),
+                    artWidth, artHeight, size.width.toFloat(), size.height.toFloat(),
                 )
-                val originX = (size.width - SCENE_WIDTH * scale) / 2f
-                val originY = (size.height - SCENE_HEIGHT * scale) / 2f
+                val originX = (size.width - artWidth * scale) / 2f
+                val originY = (size.height - artHeight * scale) / 2f
                 currentOnTap.value?.invoke(
                     ((offset.x - originX) / scale).toInt(),
                     ((offset.y - originY) / scale).toInt(),
@@ -96,9 +113,9 @@ fun Scene(
     }
 
     Canvas(modifier = modifier.then(tapModifier)) {
-        val scale = fittingScale(SCENE_WIDTH, SCENE_HEIGHT, size.width, size.height)
-        val originX = ((size.width - SCENE_WIDTH * scale) / 2f).toInt()
-        val originY = ((size.height - SCENE_HEIGHT * scale) / 2f).toInt()
+        val scale = fittingScale(artWidth, artHeight, size.width, size.height)
+        val originX = ((size.width - artWidth * scale) / 2f).toInt()
+        val originY = ((size.height - artHeight * scale) / 2f).toInt()
 
         if (backdrop != null) drawAt(backdrop, originX, originY, scale)
         for ((image, sprite) in loaded) {
