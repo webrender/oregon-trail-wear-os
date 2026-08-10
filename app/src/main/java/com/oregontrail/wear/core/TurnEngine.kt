@@ -138,6 +138,36 @@ object TurnEngine {
     }
 
     /**
+     * Spends a day hunting instead of travelling.
+     *
+     * Food is eaten and illness resolves exactly as it would on a rest day — see [rest]
+     * — but health does not get [REST_RECOVERY]'s benefit: a hunt is a day spent on foot
+     * with a rifle, not a day sitting still. [Hunting.finish] calls this once a session
+     * is done to book the day itself; the meat and ammunition it cost are applied
+     * separately, before this runs, so that a party that goes hungry mid-hunt still
+     * starves on schedule.
+     */
+    fun huntingDay(state: GameState): DayResult {
+        if (state.isOver) return DayResult(state, emptyList())
+
+        val events = mutableListOf<GameEvent>()
+        val rng = state.rng.fork()
+        var s = state.copy(
+            rng = rng,
+            dayOfJourney = state.dayOfJourney + 1,
+            weather = WeatherModel.roll(state.startMonth, state.dayOfJourney + 1, rng),
+        )
+        s = consumeFood(s, events)
+        s = resolveIllness(s, events)
+
+        if (s.party.isWipedOut) {
+            events += GameEvent.PartyLost
+            s = s.copy(outcome = Outcome.PartyLost)
+        }
+        return DayResult(s, events)
+    }
+
+    /**
      * Chooses which way to go at a branch point. No-op if [to] is not actually
      * reachable from where the party is standing.
      */

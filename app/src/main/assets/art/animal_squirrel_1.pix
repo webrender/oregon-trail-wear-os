@@ -1,0 +1,13 @@
+# Squirrel, tail curled behind, facing left.
+# Palette: . transparent, K black, W white, G green, V violet, O orange, B blue
+name: animal_squirrel_1
+size: 10x8
+pixels:
+..........
+......KKK.
+.KK..KOOK.
+KOOKKOOOK.
+KOKOOOOOK.
+KOOOOOOK..
+.KOK.KOK..
+..KK..KK..

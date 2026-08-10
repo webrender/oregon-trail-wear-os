@@ -78,6 +78,51 @@ data class Landmark(
     val isEnd: Boolean get() = routes.isEmpty()
 }
 
+/**
+ * The five biomes the trail passes through, grouped by [LandmarkId] rather than tracked
+ * as real geography — the trail is a graph of named places, and the landscape between
+ * them is presentation and hunting-ground data, not something the model reasons about.
+ *
+ * Shared between the travel backdrop ([com.oregontrail.wear.ui.art.ArtNames.terrain])
+ * and [HuntingGround], so the two never drift into disagreeing about where the party is.
+ */
+enum class TerrainRegion {
+    PRAIRIE, PLAINS, ROCKIES, DESERT, FOREST;
+
+    companion object {
+        fun of(heading: LandmarkId): TerrainRegion = when (heading) {
+            LandmarkId.INDEPENDENCE,
+            LandmarkId.KANSAS_RIVER,
+            LandmarkId.BIG_BLUE_RIVER,
+            LandmarkId.FORT_KEARNEY,
+            -> PRAIRIE
+
+            LandmarkId.CHIMNEY_ROCK,
+            LandmarkId.FORT_LARAMIE,
+            LandmarkId.INDEPENDENCE_ROCK,
+            -> PLAINS
+
+            LandmarkId.SOUTH_PASS,
+            LandmarkId.GREEN_RIVER,
+            LandmarkId.FORT_BRIDGER,
+            LandmarkId.SODA_SPRINGS,
+            LandmarkId.FORT_HALL,
+            -> ROCKIES
+
+            LandmarkId.SNAKE_RIVER,
+            LandmarkId.FORT_BOISE,
+            -> DESERT
+
+            LandmarkId.BLUE_MOUNTAINS,
+            LandmarkId.FORT_WALLA_WALLA,
+            LandmarkId.THE_DALLES,
+            LandmarkId.COLUMBIA_RIVER,
+            LandmarkId.OREGON_CITY,
+            -> FOREST
+        }
+    }
+}
+
 object Rivers {
     /**
      * Fording deeper than this risks swamping the wagon. This threshold is sourced;
@@ -123,8 +168,8 @@ object Trail {
         Landmark(
             LandmarkId.SOUTH_PASS, "South Pass", LandmarkKind.Waypoint,
             listOf(
-                Route(LandmarkId.GREEN_RIVER, 57, "Short route, ford the Green River"),
-                Route(LandmarkId.FORT_BRIDGER, 125, "Longer route, resupply at Fort Bridger"),
+                Route(LandmarkId.GREEN_RIVER, 57, "Short route: Green River"),
+                Route(LandmarkId.FORT_BRIDGER, 125, "Long route: Fort Bridger"),
             ),
         ),
         Landmark(

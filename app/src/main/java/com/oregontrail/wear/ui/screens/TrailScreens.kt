@@ -1,0 +1,281 @@
+package com.oregontrail.wear.ui.screens
+
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
+import androidx.wear.compose.material.MaterialTheme
+import androidx.wear.compose.material.Text
+import com.oregontrail.wear.core.Pace
+import com.oregontrail.wear.core.Rations
+import com.oregontrail.wear.ui.GameController
+import com.oregontrail.wear.ui.Screen
+import com.oregontrail.wear.ui.art.ArtNames
+import com.oregontrail.wear.ui.art.Scene
+import com.oregontrail.wear.ui.art.Sprite
+import com.oregontrail.wear.ui.components.Gap
+import com.oregontrail.wear.ui.components.IconValue
+import com.oregontrail.wear.ui.components.MenuChip
+import com.oregontrail.wear.ui.components.RotaryColumn
+import com.oregontrail.wear.ui.components.ScreenText
+import com.oregontrail.wear.ui.components.ScreenTitle
+import com.oregontrail.wear.ui.components.StaticScreen
+import com.oregontrail.wear.ui.money
+import com.oregontrail.wear.ui.theme.AppleII
+import com.oregontrail.wear.ui.theme.AppleIIChrome
+import kotlinx.coroutines.delay
+
+/** How long a day of travel takes to watch. A whole run is 150-ish days. */
+private const val DAY_MILLIS = 700L
+
+/** How long each frame of the walk cycle holds. */
+private const val WALK_FRAME_MILLIS = 240L
+
+/**
+ * Where the wagon stands in the 128x64 scene.
+ *
+ * The wagon does not travel across the screen. It walks on the spot in the middle, and
+ * the world is implied to move past — which is what the 1985 version did, and what the
+ * two-frame walk cycle in the art brief is built for. A wagon that actually crossed the
+ * frame would have to leave it, and there is nowhere for it to go.
+ */
+private const val WAGON_X = (128 - 56) / 2
+private const val WAGON_Y = 30
+
+/**
+ * The travel screen: a wagon, a landscape, and days going by.
+ *
+ * Days advance on a timer rather than on a tap. This is the screen the player looks at
+ * for most of a run, and making them tap 150 times to cross the continent would turn the
+ * journey into a chore. Tapping instead opens the menu, which is the only thing there is
+ * to do while travelling.
+ */
+@Composable
+fun TrailScreen(controller: GameController) {
+    val state = controller.game
+
+    // The engine refuses to advance while a decision is outstanding, and the controller
+    // no-ops when something is waiting to be read, so this loop can be unconditional.
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(DAY_MILLIS)
+            controller.advanceDay()
+        }
+    }
+
+    var frame by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(WALK_FRAME_MILLIS)
+            frame = 1 - frame
+        }
+    }
+
+    val moving = !controller.cannotMove
+    val wagon = if (moving) ArtNames.wagonWalk[frame] else ArtNames.WAGON_STOPPED
+    val heading = state.heading ?: state.at
+
+    StaticScreen(
+        modifier = Modifier.clickable(
+            interactionSource = remember { MutableInteractionSource() },
+            indication = null,
+        ) { controller.go(Screen.TrailMenu) }
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconValue(
+                    iconArt = ArtNames.weather(state.weather),
+                    value = state.date.toString(),
+                )
+            }
+            Gap(4)
+            Scene(
+                background = ArtNames.terrain(heading, state.weather),
+                // 0.85 of a 454px screen is 386px, which floors to exactly x3 for a
+                // 128-wide scene. Full width would floor to x3 as well but leave the art
+                // touching the bezel.
+                modifier = Modifier.fillMaxWidth(0.85f).aspectRatio(2f),
+                sprites = listOf(Sprite(wagon, WAGON_X, WAGON_Y)),
+            )
+            Gap(4)
+            Text(
+                text = if (moving) {
+                    "${state.milesToNextLandmark} miles to ${state.headingLandmark?.name ?: "?"}"
+                } else {
+                    "The wagon cannot move"
+                },
+                color = if (moving) AppleII.Green else AppleII.Orange,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.caption1,
+                maxLines = 2,
+                modifier = Modifier.fillMaxWidth(0.8f),
+            )
+            // The bitmap font has no descender slack to spare, so two adjacent blocks of
+            // text sit close enough to read as one. This gap is doing real work.
+            Gap(6)
+            Text(
+                text = controller.ticker ?: "Tap for options",
+                color = AppleIIChrome.MutedGreen,
+                textAlign = TextAlign.Center,
+                style = MaterialTheme.typography.caption3,
+                maxLines = 2,
+                modifier = Modifier.fillMaxWidth(0.8f),
+            )
+        }
+    }
+}
+
+@Composable
+fun TrailMenuScreen(controller: GameController) {
+    val state = controller.game
+    RotaryColumn {
+        item { ScreenTitle(state.date.toString()) }
+        item {
+            MenuChip(
+                label = "Continue on",
+                primary = true,
+                onClick = { controller.go(Screen.Trail) },
+            )
+        }
+        item {
+            MenuChip(
+                label = "Rest a day",
+                secondaryLabel = "Health up, food eaten",
+                onClick = { controller.restOneDay() },
+            )
+        }
+        item {
+            MenuChip(
+                label = "Check supplies",
+                onClick = { controller.go(Screen.Supplies) },
+            )
+        }
+        item {
+            MenuChip(
+                label = "Go hunting",
+                secondaryLabel = if (controller.canHunt) {
+                    controller.huntGround?.displayName
+                } else {
+                    "Out of ammunition"
+                },
+                enabled = controller.canHunt,
+                onClick = { controller.startHunt() },
+            )
+        }
+        item {
+            MenuChip(
+                label = "Change pace",
+                secondaryLabel = state.pace.displayName,
+                onClick = { controller.go(Screen.ChoosePace) },
+            )
+        }
+        item {
+            MenuChip(
+                label = "Change rations",
+                secondaryLabel = state.rations.displayName,
+                onClick = { controller.go(Screen.ChooseRations) },
+            )
+        }
+        if (state.store != null) {
+            item {
+                MenuChip(
+                    label = "Buy supplies",
+                    secondaryLabel = state.store?.name,
+                    onClick = { controller.go(Screen.Store) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SuppliesScreen(controller: GameController) {
+    val state = controller.game
+    val inventory = state.inventory
+
+    RotaryColumn {
+        item { ScreenTitle("Supplies") }
+        item {
+            IconValue("icon_health", "${state.party.health.displayName}, ${state.party.survivorCount} alive")
+        }
+        item { IconValue("icon_food", "${inventory.foodPounds} lb food") }
+        item { IconValue("icon_ox", "${inventory.oxen} oxen") }
+        item { IconValue("icon_clothing", "${inventory.clothingSets} clothing") }
+        item { IconValue("icon_bullets", "${inventory.bullets} bullets") }
+        item { IconValue("icon_wheel", "${inventory.spareWheels} wheels") }
+        item { IconValue("icon_axle", "${inventory.spareAxles} axles") }
+        item { IconValue("icon_tongue", "${inventory.spareTongues} tongues") }
+        item { IconValue("icon_money", money(inventory.cashCents)) }
+        item { IconValue("icon_wagon", "${state.totalMiles} miles") }
+        item {
+            ScreenText(
+                "Party: " + state.party.members.joinToString(", ") {
+                    if (it.alive) it.name else "${it.name} (dead)"
+                },
+                color = AppleIIChrome.MutedGreen,
+            )
+        }
+        item {
+            MenuChip(label = "Back", onClick = { controller.go(Screen.TrailMenu) })
+        }
+    }
+}
+
+@Composable
+fun PaceScreen(controller: GameController) {
+    RotaryColumn {
+        item { ScreenTitle("Pace") }
+        items(Pace.entries.size) { index ->
+            val pace = Pace.entries[index]
+            MenuChip(
+                label = pace.displayName,
+                secondaryLabel = paceAdvice(pace),
+                primary = pace == controller.game.pace,
+                onClick = { controller.setPace(pace) },
+            )
+        }
+    }
+}
+
+private fun paceAdvice(pace: Pace): String = when (pace) {
+    Pace.STEADY -> "Easy on the party"
+    Pace.STRENUOUS -> "Faster, and it tells"
+    Pace.GRUELING -> "As fast as you can go"
+}
+
+@Composable
+fun RationsScreen(controller: GameController) {
+    val state = controller.game
+    RotaryColumn {
+        item { ScreenTitle("Rations") }
+        items(Rations.entries.size) { index ->
+            val rations = Rations.entries[index]
+            MenuChip(
+                label = rations.displayName,
+                secondaryLabel = "${rations.poundsPerPersonPerDay * state.party.survivorCount} lb a day",
+                primary = rations == state.rations,
+                onClick = { controller.setRations(rations) },
+            )
+        }
+    }
+}

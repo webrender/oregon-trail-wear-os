@@ -1,0 +1,21 @@
+# Covered wagon, for the supplies readout.
+# Palette: . transparent, K black, W white, G green, V violet, O orange, B blue
+name: icon_wagon
+size: 16x16
+pixels:
+................
+....KKKKKKKK....
+...KWWWWWWWWK...
+..KWWWWWWWWWWK..
+..KWWWWWWWWWWK..
+..KWWWWWWWWWWK..
+..KKKKKKKKKKKK..
+..KOOOOOOOOOOK..
+..KOOOOOOOOOOK..
+..KKKKKKKKKKKK..
+...KKK....KKK...
+..KKKKK..KKKKK..
+..KKOKK..KKOKK..
+..KKKKK..KKKKK..
+...KKK....KKK...
+................

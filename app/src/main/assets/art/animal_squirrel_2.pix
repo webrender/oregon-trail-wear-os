@@ -1,0 +1,13 @@
+# Squirrel stretched in a bound, tail flicked up, facing left.
+# Palette: . transparent, K black, W white, G green, V violet, O orange, B blue
+name: animal_squirrel_2
+size: 10x8
+pixels:
+.......KK.
+.....KKOOK
+.KK.KOOOK.
+KOOKKOOOK.
+KOKOOOOK..
+KOOOOOOK..
+.KOK.KOK..
+..KK..KK..

@@ -1,0 +1,21 @@
+# Three cartridges standing on end, for the supplies readout.
+# Palette: . transparent, K black, W white, G green, V violet, O orange, B blue
+name: icon_bullets
+size: 16x16
+pixels:
+................
+................
+...KK..KK..KK...
+..KWWKKWWKKWWK..
+..KWWKKWWKKWWK..
+..KOOKKOOKKOOK..
+..KOOKKOOKKOOK..
+..KOOKKOOKKOOK..
+..KOOKKOOKKOOK..
+..KOOKKOOKKOOK..
+..KOOKKOOKKOOK..
+..KOOKKOOKKOOK..
+..KKKKKKKKKKKK..
+................
+................
+................
