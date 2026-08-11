@@ -1,6 +1,5 @@
 package com.oregontrail.wear.ui.screens
 
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
@@ -12,27 +11,15 @@ import com.oregontrail.wear.ui.Screen
 import com.oregontrail.wear.ui.components.Gap
 import com.oregontrail.wear.ui.components.MenuChip
 import com.oregontrail.wear.ui.components.RotaryColumn
-import com.oregontrail.wear.ui.components.RotaryScrollColumn
+import com.oregontrail.wear.ui.components.SceneScrollColumn
 import com.oregontrail.wear.ui.components.ScreenText
 import com.oregontrail.wear.ui.components.ScreenTitle
 import com.oregontrail.wear.ui.money
-import com.oregontrail.wear.ui.art.Scene
 import com.oregontrail.wear.ui.theme.AppleIIChrome
 
 @Composable
 fun TitleScreen(controller: GameController) {
-    RotaryScrollColumn {
-        // Deliberately x2 rather than x3: the title screen has to fit a heading and two
-        // chips underneath, and a full-size scene leaves no room for them. This is the
-        // one screen where the art gives way to the controls.
-        //
-        // The fraction is of the *padded* width, which is 390px once the column's 16.dp
-        // of side padding is doubled by the display's density of 2. 0.72 of that is 281,
-        // which floors to x2 with room to spare; 0.62 gave 242 and floored to x1.
-        Scene(
-            background = "title_banner",
-            modifier = Modifier.fillMaxWidth(0.72f).aspectRatio(2f),
-        )
+    SceneScrollColumn(background = "title_banner") {
         Gap(4)
         ScreenTitle("THE OREGON TRAIL")
         Gap(12)
