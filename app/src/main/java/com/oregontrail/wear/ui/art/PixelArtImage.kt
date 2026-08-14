@@ -3,6 +3,7 @@ package com.oregontrail.wear.ui.art
 import android.content.Context
 import android.graphics.BitmapFactory
 import android.util.LruCache
+import java.util.concurrent.ConcurrentHashMap
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
@@ -24,9 +25,9 @@ import kotlin.math.roundToInt
 /**
  * Loads art from the APK's assets, downsampled to the size it will actually be drawn at.
  *
- * The art is authored far larger than any watch can show it — a landmark scene is
- * 1672x941, a supplies icon 1018x848 — and decoding those at full size would cost about
- * 420MB of bitmap for the seventy-odd assets in the game. So every load says how big it
+ * The art is authored far larger than any watch can show it — a landmark scene is 820x461
+ * against a 384-pixel display — and decoding the set at full size would cost about 60MB of
+ * bitmap for the seventy-odd assets in the game. So every load says how big it
  * needs the result to be, and [BitmapFactory] is asked to throw away the detail beyond
  * that while decoding, which is both far cheaper than decoding and scaling afterwards and
  * a better-looking result than letting the GPU do a 10x minification at draw time.
@@ -59,8 +60,13 @@ object ArtLoader {
      * 40ms tick and asks for each sprite again, and reading a PNG header off the asset
      * manager twenty-five times a second per sprite is real work for an answer that
      * cannot change. Unbounded, but it holds one integer per asset.
+     *
+     * Concurrent because [prewarm] loads from a background thread while composition loads
+     * from the main one. A plain `HashMap` written from two threads can corrupt its own
+     * table and spin forever on a later read — a hang, not an exception, and one that
+     * would surface as a frozen watch long after the code that caused it.
      */
-    private val sourceEdges = mutableMapOf<String, Int>()
+    private val sourceEdges = ConcurrentHashMap<String, Int>()
 
     /**
      * Loads `assets/art/<name>.png`, decoded small enough that neither side much exceeds
@@ -89,6 +95,25 @@ object ArtLoader {
         load(context, name, maxEdgePx)
     } catch (e: Exception) {
         null
+    }
+
+    /**
+     * Decodes art ahead of the screen that needs it, for calling off the main thread.
+     *
+     * [load] is synchronous and runs inside composition, so a cache miss inflates a PNG in
+     * the middle of the frame that was supposed to draw it. A hunt cannot afford that: it
+     * ticks every 40ms, and the first time each species crosses the scene it decodes two
+     * new frames inside a tick — a visible stumble in the one part of the game that is
+     * real-time and asks the player to lead a moving target.
+     *
+     * [maxEdgePx] has to be the size the screen will go on to ask for, or rather the same
+     * power-of-two bucket: the cache is keyed by sample size, so a prewarm at the wrong
+     * size is not merely wasted, it is invisible — it fills the cache with entries nothing
+     * ever looks up and leaves the stutter exactly where it was. Callers get that size
+     * from [spriteEdgePx], which is what [Scene] itself uses.
+     */
+    fun prewarm(context: Context, names: Iterable<String>, maxEdgePx: Int) {
+        for (name in names) loadOrNull(context, name, maxEdgePx)
     }
 }
 

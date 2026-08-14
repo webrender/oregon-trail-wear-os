@@ -19,23 +19,31 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.CompactChip
 import androidx.wear.compose.material.Text
 import com.oregontrail.wear.core.Animal
 import com.oregontrail.wear.ui.GameController
+import com.oregontrail.wear.ui.art.ArtLoader
 import com.oregontrail.wear.ui.art.ArtNames
 import com.oregontrail.wear.ui.art.SCENE_HEIGHT
 import com.oregontrail.wear.ui.art.SCENE_WIDTH
 import com.oregontrail.wear.ui.art.Scene
 import com.oregontrail.wear.ui.art.Sprite
+import com.oregontrail.wear.ui.art.spriteEdgePx
 import com.oregontrail.wear.ui.components.Gap
 import com.oregontrail.wear.ui.components.ScreenText
 import com.oregontrail.wear.ui.components.ScreenTitle
 import com.oregontrail.wear.ui.theme.AppleII
 import com.oregontrail.wear.ui.theme.AppleIIChrome
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlin.math.max
 import kotlin.math.sqrt
 import kotlin.random.Random
 
@@ -179,6 +187,34 @@ fun HuntingScreen(controller: GameController) {
     val ground = controller.huntGround ?: return
     val startingBullets = remember { controller.game.inventory.bullets }
     val scope = rememberCoroutineScope()
+
+    // Decode every sprite this hunt can possibly show before the first tick, off the main
+    // thread. Without it the first crossing by each species pays for two PNG decodes
+    // inside a 40ms tick, and the animal visibly stutters on exactly the frame the player
+    // is trying to lead. The sizes have to match what Scene will ask for or the warmed
+    // entries are never found again — hence spriteEdgePx rather than a guess.
+    val context = LocalContext.current
+    val displayWidthPx = with(LocalDensity.current) {
+        LocalConfiguration.current.screenWidthDp.dp.roundToPx()
+    }
+    LaunchedEffect(ground, displayWidthPx) {
+        withContext(Dispatchers.Default) {
+            for (species in ground.animals.distinct()) {
+                val edge = spriteEdgePx(max(species.width(), species.height()), displayWidthPx)
+                ArtLoader.prewarm(context, (0..1).map { ArtNames.animal(species, it) }, edge)
+            }
+            ArtLoader.prewarm(
+                context,
+                listOf(ArtNames.HUNTER_STAND, ArtNames.HUNTER_SHOOT),
+                spriteEdgePx(max(HUNTER_WIDTH, HUNTER_HEIGHT), displayWidthPx),
+            )
+            ArtLoader.prewarm(
+                context,
+                listOf(ArtNames.HUNT_CARCASS),
+                spriteEdgePx(max(CARCASS_WIDTH, CARCASS_HEIGHT), displayWidthPx),
+            )
+        }
+    }
 
     var elapsedMillis by remember { mutableLongStateOf(0L) }
     var bulletsUsed by remember { mutableIntStateOf(0) }

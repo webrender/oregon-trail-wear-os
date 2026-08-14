@@ -25,6 +25,11 @@ import com.oregontrail.wear.core.RiverCrossing
 import com.oregontrail.wear.core.Store
 import com.oregontrail.wear.core.TurnEngine
 import com.oregontrail.wear.data.SaveRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.launch
 
 /**
  * Holds the run and everything the screens need to know about it.
@@ -34,12 +39,86 @@ import com.oregontrail.wear.data.SaveRepository
  * ViewModel would buy us (surviving configuration change) is already covered by the save
  * file, and using one would mean adding a dependency for nothing.
  *
- * All mutation happens on the main thread from Compose callbacks. That is safe here
+ * All *state* mutation happens on the main thread from Compose callbacks. That is safe
  * because the engine is pure and each call is a cheap synchronous transform of an
- * immutable [GameState]; there is no work worth moving off the main thread, and no
- * concurrency to coordinate.
+ * immutable [GameState]. The disk write that follows it is not cheap and does not happen
+ * there — see [commit].
  */
-class GameController(private val repository: SaveRepository) {
+class GameController(
+    private val repository: SaveRepository,
+    /**
+     * Where saves are written. Injected so the JVM tests can pass a scope they control
+     * and await, rather than racing a background write.
+     */
+    saveScope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.IO),
+) {
+
+    /**
+     * What the save worker has been asked to do next: write a state, or delete the file.
+     *
+     * Both go through one queue so they cannot reorder. Abandoning a run used to delete
+     * the file inline, which — now that writes are asynchronous — would let a write
+     * queued a moment earlier land *after* the delete and resurrect the run the player
+     * just abandoned.
+     */
+    private sealed interface SaveTask {
+        data class Write(val state: GameState) : SaveTask
+        data object Clear : SaveTask
+    }
+
+    /**
+     * The task waiting to be performed, and the worker draining it.
+     *
+     * A conflated channel rather than a job per save: travel advances a day every 700ms
+     * and each of those days is several mutations, so saves are queued faster than a
+     * watch's flash retires them. Conflation collapses a backlog to the newest task,
+     * which is the only one that matters — a state superseded before it reached the disk
+     * was never worth writing.
+     *
+     * Off the main thread because the write is not cheap: it serialises the whole run to
+     * JSON, writes a temp file, deletes, and renames. Doing that inline in [commit] put
+     * four filesystem round-trips inside the frame that had to draw the result, which on
+     * the trail is a frame every 700ms.
+     */
+    private val saves = Channel<SaveTask>(Channel.CONFLATED)
+
+    init {
+        saveScope.launch {
+            for (task in saves) perform(task)
+        }
+    }
+
+    /**
+     * Locked because [flushSave] performs tasks from the main thread while the worker may
+     * be performing one of its own. The queue hands each task to exactly one of them, so
+     * they never duplicate work, but a write and a delete overlapping on the same file
+     * would still be a race.
+     */
+    private val fileLock = Any()
+
+    private fun perform(task: SaveTask) = synchronized(fileLock) {
+        when (task) {
+            is SaveTask.Write -> repository.save(task.state)
+            SaveTask.Clear -> repository.clear()
+        }
+    }
+
+    /**
+     * Performs any queued save or delete immediately, on the calling thread.
+     *
+     * Called from `onStop` — the last moment the app is reliably alive, since Wear OS
+     * kills backgrounded apps without warning and a queued write is only as durable as
+     * the process holding it — and before anything reads the file back, so a read never
+     * sees a state the queue has already superseded. Between this and conflation the disk
+     * is at most one frame behind the screen while the app is visible, and exactly current
+     * the moment it isn't.
+     */
+    fun flushSave() {
+        while (true) {
+            val task = saves.tryReceive().getOrNull() ?: return
+            perform(task)
+        }
+    }
 
     var screen: Screen by mutableStateOf(Screen.Title)
         private set
@@ -97,7 +176,13 @@ class GameController(private val repository: SaveRepository) {
      */
     private var huntRng: Rng? = null
 
-    val hasSave: Boolean get() = repository.hasSave()
+    // Flushed first so the answer accounts for a save queued but not yet written. Only
+    // ever read on the title screen, where the queue is empty, so this costs nothing in
+    // practice — but it makes the answer correct by construction rather than by luck.
+    val hasSave: Boolean get() {
+        flushSave()
+        return repository.hasSave()
+    }
 
     /** The run, or an error if a screen that requires one is somehow showing without it. */
     val game: GameState
@@ -132,6 +217,7 @@ class GameController(private val repository: SaveRepository) {
 
     /** Resumes the saved run, or falls back to the title screen if it cannot be read. */
     fun resumeSavedGame() {
+        flushSave()
         val loaded = repository.load()
         if (loaded == null) {
             screen = Screen.Title
@@ -145,7 +231,11 @@ class GameController(private val repository: SaveRepository) {
     }
 
     fun abandonRun() {
-        repository.clear()
+        // Queued like every other file operation so it cannot overtake or be overtaken by
+        // a pending write, then flushed so the title screen this returns to sees the run
+        // actually gone. Rare and deliberate enough that a synchronous delete is free.
+        saves.trySend(SaveTask.Clear)
+        flushSave()
         state = null
         pendingEvents = emptyList()
         pendingEncounter = null
@@ -351,16 +441,16 @@ class GameController(private val repository: SaveRepository) {
     // ---- Internals ----
 
     /**
-     * Records a new state and writes it to disk.
+     * Records a new state and queues it to disk.
      *
      * Every mutation saves. A run is 20-30 minutes on a device that kills backgrounded
      * apps without warning, so anything less than save-on-every-change means losing
-     * progress — and the writes are a few kilobytes of JSON, which is nothing next to
-     * the cost of a lost run.
+     * progress. The write itself happens on [saves]' worker rather than here — see that
+     * channel and [flushSave] for why the guarantee survives the move.
      */
     private fun commit(next: GameState) {
         state = next
-        repository.save(next)
+        saves.trySend(SaveTask.Write(next))
     }
 
     /** Sorts a day's events into what stops the wagon and what merely scrolls past. */

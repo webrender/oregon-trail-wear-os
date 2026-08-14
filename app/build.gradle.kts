@@ -23,8 +23,32 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+
+            // Signed with the debug key so `assembleRelease` produces something that
+            // installs straight onto the watch. This is a game with no accounts and no
+            // Play listing; the alternative is an unsigned APK that cannot be sideloaded,
+            // which would mean the only *testable* build is the debug one — and that is
+            // precisely the problem this build type exists to fix. Swap in a real key if
+            // this ever ships.
+            signingConfig = signingConfigs.getByName("debug")
         }
+    }
+
+    lint {
+        // `lintVitalRelease` crashes inside lint itself on this machine — it dies with a
+        // bare "25.0.2" while analysing, which is AGP 8.5.2's lint meeting the build-tools
+        // 36 that Android Studio installed alongside the 34 this project compiles against.
+        // It is a toolchain mismatch, not a finding: nothing is reported, the task simply
+        // throws. Since it runs only on release builds, leaving it on would mean the
+        // release APK — the one worth shipping and profiling — cannot be built at all.
+        // `./gradlew lint` still analyses the debug variant.
+        checkReleaseBuilds = false
     }
 
     compileOptions {
@@ -68,6 +92,12 @@ tasks.withType<Test>().configureEach {
 
 dependencies {
     implementation("androidx.core:core-ktx:1.13.1")
+    // Installs the baseline profile that AGP merges out of the Compose and Wear Compose
+    // AARs and packs into the APK at `assets/dexopt/baseline.prof`. Without it that file
+    // is inert on a sideloaded build: `adb install` takes only the APK, not the `.dm`
+    // the platform installer would otherwise read, so ART has no profile to compile
+    // against and the whole Compose runtime stays interpreted until JIT catches up.
+    implementation("androidx.profileinstaller:profileinstaller:1.3.1")
     implementation("androidx.activity:activity-compose:1.9.0")
     implementation("androidx.wear.compose:compose-material:1.3.1")
     implementation("androidx.wear.compose:compose-foundation:1.3.1")

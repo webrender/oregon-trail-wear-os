@@ -23,4 +23,15 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent { OregonTrailApp(controller) }
     }
+
+    /**
+     * The run's saves are written on a background worker so they stay out of the frame
+     * that has to draw their result, which leaves a window — small, but real — where the
+     * newest state is queued rather than on disk. `onStop` is the last callback Wear OS
+     * reliably delivers before it may kill the process, so the queue is drained here.
+     */
+    override fun onStop() {
+        controller.flushSave()
+        super.onStop()
+    }
 }

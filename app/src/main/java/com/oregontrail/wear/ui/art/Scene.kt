@@ -106,14 +106,13 @@ fun Scene(
     val displayWidthPx = with(LocalDensity.current) {
         LocalConfiguration.current.screenWidthDp.dp.roundToPx()
     }
-    val maxScale = displayWidthPx.toFloat() / SCENE_WIDTH
 
     val backdrop = remember(background, displayWidthPx) {
         background?.let { ArtLoader.loadOrNull(context, it, backdropEdgePx(displayWidthPx)) }
     }
-    val loaded = remember(sprites, maxScale) {
+    val loaded = remember(sprites, displayWidthPx) {
         sprites.mapNotNull { sprite ->
-            val edge = (max(sprite.width, sprite.height) * maxScale).roundToInt()
+            val edge = spriteEdgePx(max(sprite.width, sprite.height), displayWidthPx)
             ArtLoader.loadOrNull(context, sprite.name, edge)?.let { it to sprite }
         }
     }
@@ -160,6 +159,18 @@ fun Scene(
  * about a fifth.
  */
 private fun backdropEdgePx(displayWidthPx: Int): Int = displayWidthPx * 3 / 2
+
+/**
+ * How big a sprite whose box is [boxEdge] scene units across needs decoding, on a
+ * [displayWidthPx]-wide display.
+ *
+ * Public and shared rather than inlined into [Scene] because [ArtLoader.prewarm] has to
+ * arrive at the identical answer — the art cache is keyed by the sample size a request
+ * resolves to, so a prewarm that computes this even slightly differently silently misses
+ * the cache and buys nothing. One function, two callers, no chance of drift.
+ */
+fun spriteEdgePx(boxEdge: Int, displayWidthPx: Int): Int =
+    (boxEdge * (displayWidthPx.toFloat() / SCENE_WIDTH)).roundToInt()
 
 /**
  * Draws [image] scaled to fill the whole [DrawScope], cropping whichever side overshoots.
