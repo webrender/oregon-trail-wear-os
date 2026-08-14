@@ -13,6 +13,8 @@ import com.oregontrail.wear.ui.screens.HuntingScreen
 import com.oregontrail.wear.ui.screens.MonthScreen
 import com.oregontrail.wear.ui.screens.PaceScreen
 import com.oregontrail.wear.ui.screens.ProfessionScreen
+import com.oregontrail.wear.ui.screens.RaftResultScreen
+import com.oregontrail.wear.ui.screens.RaftScreen
 import com.oregontrail.wear.ui.screens.RationsScreen
 import com.oregontrail.wear.ui.screens.RiverScreen
 import com.oregontrail.wear.ui.screens.StoreItemScreen
@@ -26,16 +28,18 @@ import com.oregontrail.wear.ui.theme.OregonTrailTheme
 /**
  * The whole app: one composable that decides what is on screen.
  *
- * Two things take precedence over [GameController.screen], and both are interruptions
- * rather than destinations — a river result and an unread event can each arrive while
- * the player is on any screen, and neither should be navigable *to*. Checking them here
- * rather than inside each screen keeps that rule in one place.
+ * A handful of things take precedence over [GameController.screen], and all of them are
+ * interruptions rather than destinations — a river result, a rafting result, and an
+ * unread event can each arrive while the player is on any screen, and none should be
+ * navigable *to*. Checking them here rather than inside each screen keeps that rule in
+ * one place.
  */
 @Composable
 fun OregonTrailApp(controller: GameController) {
     OregonTrailTheme {
         when {
             controller.crossingResult != null -> CrossingResultScreen(controller)
+            controller.raftOutcome != null -> RaftResultScreen(controller)
             controller.pendingEvents.isNotEmpty() -> EventScreen(controller)
             controller.pendingEncounter != null -> EncounterScreen(controller)
             else -> Destination(controller)
@@ -59,6 +63,7 @@ private fun Destination(controller: GameController) {
         Screen.ChooseRations -> RationsScreen(controller)
         Screen.Arrival -> ArrivalScreen(controller)
         Screen.River -> RiverScreen(controller)
+        Screen.Raft -> RaftScreen(controller)
         Screen.Fork -> ForkScreen(controller)
         Screen.GameOver -> GameOverScreen(controller)
         Screen.ConfirmAbandon -> ConfirmAbandonScreen(controller)

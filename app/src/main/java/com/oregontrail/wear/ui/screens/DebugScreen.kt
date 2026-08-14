@@ -29,12 +29,40 @@ import com.oregontrail.wear.ui.components.ScreenTitle
 fun DebugScreen(controller: GameController) {
     RotaryColumn {
         item { ScreenTitle("Debug: jump to") }
+        // Hunting is the one screen with no landmark of its own, and the only way to
+        // reach it in a real run — travel, then TrailMenu — races the day ticker, so
+        // checking it by hand costs several attempts. Chimney Rock is the pick because
+        // the plains spawn mostly bison, and one bison is 200-400 lb against a 100 lb
+        // carry limit: it's the fastest way to see the readout hit its cap and turn
+        // orange, which is the state worth checking and the hardest to reach by playing.
+        item {
+            MenuChip(
+                label = "Hunting",
+                secondaryLabel = "the plains",
+                onClick = {
+                    controller.debugJumpTo(
+                        // Underway rather than parked: a hunt only happens between
+                        // landmarks, and it's the state the party returns to afterwards,
+                        // so this is also the only jump that shows the hunt's summary
+                        // ticker. Fort Laramie is the plains too, so the ground is the
+                        // same whichever of the two `groundAt` reads.
+                        debugOutfittedState().copy(
+                            at = LandmarkId.CHIMNEY_ROCK,
+                            heading = LandmarkId.FORT_LARAMIE,
+                        ),
+                        Screen.Trail,
+                    )
+                    controller.startHunt()
+                },
+            )
+        }
         items(Trail.landmarks.size) { index ->
             val landmark = Trail.landmarks[index]
             MenuChip(
                 label = landmark.name,
                 secondaryLabel = when (landmark.kind) {
                     is LandmarkKind.River -> "River crossing"
+                    LandmarkKind.Rapids -> "Rafting minigame"
                     is LandmarkKind.Fort -> "Fort"
                     LandmarkKind.Destination -> "Journey's end"
                     LandmarkKind.Departure, LandmarkKind.Waypoint -> null
@@ -49,6 +77,8 @@ fun DebugScreen(controller: GameController) {
                             )
                         landmark.kind is LandmarkKind.River ->
                             controller.debugJumpTo(base, Screen.River)
+                        landmark.kind is LandmarkKind.Rapids ->
+                            controller.debugJumpTo(base, Screen.Raft)
                         else ->
                             controller.debugJumpTo(base, Screen.Arrival)
                     }

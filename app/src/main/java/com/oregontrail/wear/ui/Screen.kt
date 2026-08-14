@@ -48,6 +48,9 @@ sealed interface Screen {
     /** At a river, choosing how to cross. */
     data object River : Screen
 
+    /** Running the Columbia on a raft — the last leg, if the player chose the water. */
+    data object Raft : Screen
+
     /** At a branch in the trail, choosing a route. */
     data object Fork : Screen
 
@@ -78,6 +81,7 @@ fun demandedScreen(state: GameState): Screen? = when {
     state.isOver -> Screen.GameOver
     !state.awaitingDecision -> null
     state.currentLandmark.kind is LandmarkKind.River -> Screen.River
+    state.currentLandmark.kind is LandmarkKind.Rapids -> Screen.Raft
     state.currentLandmark.isBranch -> Screen.Fork
     // Awaiting a decision with neither a river nor a branch to resolve would be a bug in
     // the trail table — a landmark with no way onward that is not the destination. Route

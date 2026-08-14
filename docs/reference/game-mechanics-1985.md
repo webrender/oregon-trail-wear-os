@@ -13,7 +13,8 @@ ammunition box size and per-profession starting money — were supplied by the u
 | [ayebear/oregon-trail](https://github.com/ayebear/oregon-trail) | Trail graph with exact distances, river depth/width/ferry flags | **No license file — all rights reserved.** Do not copy code. Facts only. |
 | [attilabuti/Oregon-Trail](https://github.com/attilabuti/Oregon-Trail) | Go recreation of the 1978 text version | Unspecified |
 | GameFAQs walkthrough (ASchultz, 2000), vendored in ayebear repo as `original_game/strategy_and_path.txt` | Store price table, scoring, pace/ration rates | Fan documentation |
-| [philipbouchard.com](https://www.philipbouchard.com/oregon-trail/) | Design intent from the 1985 lead designer; landmark order | Author's own site |
+| [philipbouchard.com](https://www.philipbouchard.com/oregon-trail/) | Design intent from the 1985 lead designer; landmark order; the Columbia rafting game | Author's own site |
+| [died-of-dysentery.com](https://www.died-of-dysentery.com/stories/rafting-columbia.html) | Second-hand account of the rafting game as played | Fan documentation |
 | AppleWin `source/RGBMonitor.cpp` (in-repo submodule) | Authoritative hi-res palette RGB | GPL-3.0 — values are facts, not code |
 
 **Key legal read:** game rules, numbers, and data tables are facts and not
@@ -157,6 +158,7 @@ Documented ways to get stuck or killed:
 - Wagon breaks down without the matching spare part (wheel / axle / tongue)
 - Fording a river deeper than 3 feet
 - Wagon capsizes during a crossing
+- Hitting a rock or the bank while rafting the Columbia
 - A party member is ill and you don't rest
 - Food runs out
 - Pushing oxen too hard on bad water / inadequate grass
@@ -171,6 +173,62 @@ fever** — plus injuries (broken limbs, snakebite).
 - **100 lb carry limit** back to the wagon regardless of how much was shot — the
   deliberate sustainability lesson
 - Available only between landmarks
+
+## Rafting the Columbia
+
+The trail's other minigame, and the one the 1985 version *ends* on. Sourced from
+Bouchard's own account ([Rafting Down the Columbia
+River](https://www.philipbouchard.com/oregon-trail/rafting-columbia.html)) and a
+player-side description of the shipped game
+([died-of-dysentery.com](https://www.died-of-dysentery.com/stories/rafting-columbia.html)).
+
+**Both endings are 1985 inventions.** Neither rafting the Columbia nor the Barlow Toll
+Road appears in the 1971/1978 game; Bouchard added both as part of putting real
+geography into the trail, which is what makes the branch at The Dalles in the
+[trail graph](#trail-graph) faithful rather than embellishment.
+
+What shipped is a stripped-down version of what was designed. Cut before release:
+hiring local guides for the descent, a river current that pushed the raft sideways, and
+portaging around waterfalls and rapids. Bouchard: the game was "entirely about avoiding
+the rocks in the river, and then landing the raft at the correct exit point."
+
+The shipped loop:
+
+| Element | What it was |
+|---|---|
+| View | An abstract 45° overhead angle, deliberately "very similar to the river crossing module" |
+| Motion | The current carries the raft downstream on its own; the player only steers |
+| Controls | Arrow keys, left and right |
+| Hazards | Rocks in the channel, and the two banks. Nothing else |
+| Damage | Supplies lost, and party members could drown |
+| Pacing | Three direction signs pass on the bank |
+| Ending | After the third sign, land at the squiggly path up the bank |
+
+**Two design faults Bouchard names himself**, both worth fixing rather than reproducing:
+
+1. **No distinction between a glancing blow and a direct hit** — a scrape cost the same
+   as a broadside. He states plainly he wishes this had been implemented.
+2. **The losses were out of proportion** — "the losses from hitting a rock often seem
+   excessive, and the losses from hitting the river bank seem even more out of whack."
+
+Contemporary walkthroughs advised saving the game at The Dalles specifically so a bad
+run could be retried, which is a fair measure of how punishing it was.
+
+### What we implement
+
+Unsourced beyond the shape above — the numbers are ours, and are tuning knobs. See
+`core/Rafting.kt`, which owns the loss table, and `ui/screens/RaftScreen.kt`, which owns
+the real-time loop. Departures from the original, all deliberate:
+
+- **Impact severity is graded** — graze, solid hit, or bank — from how deep the overlap
+  is, which is fault (1) above fixed in the one place it can be.
+- **The crown steers**, not a d-pad. See [ADR 0004](../adr/0004-unified-input-scheme.md):
+  a finger on a 1.2" screen covers the rocks it is trying to dodge.
+- **A briefing card replaces the original's two screens of instructions**, for the same
+  reason the rest of the game has no walls of text.
+- **There is no failing to arrive.** A wrecked raft still washes up downstream, poorer,
+  exactly as a capsized wagon still reaches the far bank in `RiverCrossing`. A party
+  wiped out on the water ends the run as any other wipeout does.
 
 ## Apple II hi-res palette
 

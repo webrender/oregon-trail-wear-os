@@ -51,6 +51,17 @@ sealed interface LandmarkKind {
         val ferryAvailable: Boolean,
     ) : LandmarkKind
 
+    /**
+     * White water that has to be run rather than crossed.
+     *
+     * Distinct from [River] because there is no decision to make here: the party
+     * committed to the water when they chose this route at The Dalles, and what remains
+     * is execution — see [Rafting] and the 1985 design's own account of the rafting
+     * game in docs/reference/game-mechanics-1985.md. A [River]'s ford/caulk/ferry/wait
+     * menu would be the wrong question to ask on a raft already in the current.
+     */
+    data object Rapids : LandmarkKind
+
     /** Somewhere to stop, look, and talk to people. No store, no obstacle. */
     data object Waypoint : LandmarkKind
 
@@ -217,8 +228,7 @@ object Trail {
             ),
         ),
         Landmark(
-            LandmarkId.COLUMBIA_RIVER, "The Columbia River",
-            LandmarkKind.River(widthFeet = 2000, typicalDepthFeet = 8.0, ferryAvailable = false),
+            LandmarkId.COLUMBIA_RIVER, "The Columbia River", LandmarkKind.Rapids,
             listOf(Route(LandmarkId.OREGON_CITY, 20)),
         ),
         Landmark(

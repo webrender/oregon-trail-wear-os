@@ -79,7 +79,13 @@ MAX_DRAWN_PX = {
 }
 
 BACKDROPS = ("lm_", "river_", "terrain_")
-BACKDROP_NAMES = {"store_interior", "title_banner", "wagon_arrival", "hunt_terrain"}
+# `raft_wreck` is a backdrop whose name begins "raft_" like the minigame's sprites, so it
+# has to be named here or `role` files it as a sprite and caps it at 268px — a backdrop
+# that is then upscaled across a 384px display. (The minigame's channel backdrop needs no
+# such exception: it is `river_bank`, which the prefixes above already catch.)
+BACKDROP_NAMES = {
+    "store_interior", "title_banner", "wagon_arrival", "hunt_terrain", "raft_wreck",
+}
 FIGURE_NAMES = {"tombstone", "ox_dead"}
 
 # The bullet was authored twice: an opaque version on a black field, and a

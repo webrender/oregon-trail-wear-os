@@ -97,6 +97,59 @@ class ArtNamesTest {
     }
 
     @Test
+    fun `the rafting minigame has its river, raft, hazards and landing`() {
+        for (frame in ArtNames.raftBob) {
+            assertArtExists(frame, "raft bob cycle")
+        }
+        assertArtExists(ArtNames.RAFT_RIVER, "raft river")
+        assertArtExists(ArtNames.ROCK_SMALL, "small rock")
+        assertArtExists(ArtNames.ROCK_LARGE, "large rock")
+        assertArtExists(ArtNames.RAFT_FOAM, "raft foam")
+        assertArtExists(ArtNames.RAFT_SIGN, "raft sign")
+        assertArtExists(ArtNames.RAFT_LANDING, "raft landing")
+        assertArtExists(ArtNames.RAFT_WRECK, "raft wreck")
+    }
+
+    /**
+     * The one backdrop in the game that may not be wider than it is tall.
+     *
+     * It is drawn down the whole round display looking straight at the channel, scrolling
+     * as a strip of itself alternating with a vertically flipped copy. That tiling makes
+     * its width the only exact fit, so it is never cropped sideways — which matters,
+     * because [com.oregontrail.wear.ui.screens.RaftScreen] places its banks by scene
+     * units rather than by anything it can see in the art.
+     *
+     * The height is what this pins. One tile has to reach at least a full screen, or the
+     * river repeats within a single view and the player watches the same stretch of bank
+     * go by twice at once. The art is square, which clears the bar comfortably; a 16:9
+     * file dropped in by mistake would not.
+     */
+    @Test
+    fun `the raft river backdrop is at least as tall as the display is`() {
+        val (width, height) = pngSize(File(artDirectory, "${ArtNames.RAFT_RIVER}.png"))
+        assertTrue(
+            "${ArtNames.RAFT_RIVER} must be no wider than it is tall, was ${width}x$height",
+            height >= width,
+        )
+    }
+
+    /**
+     * A PNG's dimensions, read straight out of its IHDR chunk.
+     *
+     * `javax.imageio` is not on the Android unit-test classpath, and pulling in an image
+     * library to read two integers would be absurd. The header is fixed-layout: an
+     * 8-byte signature, a 4-byte length, the 4-byte chunk type, then width and height as
+     * big-endian 32-bit integers.
+     */
+    private fun pngSize(file: File): Pair<Int, Int> {
+        val header = file.readBytes().copyOfRange(0, 24)
+        fun intAt(offset: Int): Int = (0..3).fold(0) { acc, i ->
+            (acc shl 8) or (header[offset + i].toInt() and 0xFF)
+        }
+        return intAt(16) to intAt(20)
+    }
+
+    @Test
     fun `every kind of encounter has a portrait`() {
         val sample = listOf(
             Encounter.Traveler("test"),

@@ -45,7 +45,7 @@ import com.oregontrail.wear.ui.theme.AppleIIChrome
 import kotlinx.coroutines.delay
 
 /** How long a day of travel takes to watch. A whole run is 150-ish days. */
-private const val DAY_MILLIS = 700L
+private const val DAY_MILLIS = 1_500L
 
 /** How long each frame of the walk cycle holds. */
 private const val WALK_FRAME_MILLIS = 240L

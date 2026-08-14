@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import com.oregontrail.wear.core.CrossingMethod
 import com.oregontrail.wear.core.CrossingResult
 import com.oregontrail.wear.core.Encounter
+import com.oregontrail.wear.core.LandmarkKind
 import com.oregontrail.wear.core.Outcome
 import com.oregontrail.wear.core.Rivers
 import com.oregontrail.wear.core.Scoring
@@ -58,7 +59,9 @@ fun ArrivalScreen(controller: GameController) {
         )
         Gap(10)
         MenuChip(
-            label = "Continue on",
+            // The Columbia is the one landmark where "continue on" would be a lie: the
+            // way onward is a raft, and the player should know that before they tap.
+            label = if (landmark.kind is LandmarkKind.Rapids) "Launch the raft" else "Continue on",
             primary = true,
             onClick = { controller.go(com.oregontrail.wear.ui.resumeScreen(state)) },
         )

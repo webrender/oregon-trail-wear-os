@@ -21,6 +21,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import kotlin.math.floor
 import kotlin.math.max
 import kotlin.math.min
 import kotlin.math.roundToInt
@@ -91,6 +92,14 @@ fun Scene(
     modifier: Modifier = Modifier.fillMaxWidth().aspectRatio(2f),
     sprites: List<Sprite> = emptyList(),
     /**
+     * How far the backdrop has drifted *down* the canvas, in scene units, or null for a
+     * backdrop that stays put — which is every scene but the rafting minigame's.
+     *
+     * Supplying it switches the backdrop from one covering draw to an endless vertically
+     * mirror-tiled strip; see [drawScrolling].
+     */
+    backdropScroll: Float? = null,
+    /**
      * Reports a tap in scene coordinates rather than device pixels — see [SCENE_WIDTH].
      * Kept here rather than pushed onto the caller so that the maths positioning sprites
      * is the one place that also has to invert it.
@@ -145,7 +154,10 @@ fun Scene(
     Canvas(modifier = modifier.clipToBounds().then(tapModifier)) {
         val scale = size.width / SCENE_WIDTH
 
-        if (backdrop != null) drawCovering(backdrop)
+        if (backdrop != null) {
+            if (backdropScroll == null) drawCovering(backdrop)
+            else drawScrolling(backdrop, backdropScroll * scale)
+        }
         for ((image, sprite) in loaded) drawInBox(image, sprite, scale)
     }
 }
@@ -180,6 +192,48 @@ private fun DrawScope.drawCovering(image: ImageBitmap) {
     val width = image.width * scale
     val height = image.height * scale
     draw(image, (size.width - width) / 2f, (size.height - height) / 2f, width, height)
+}
+
+/**
+ * Draws [image] as an endless vertical strip, drifted [offsetPx] device pixels down.
+ *
+ * The strip is built by alternating the image with a vertically flipped copy of itself.
+ * That is what makes it endless without asking for art that tiles: the flipped copy's
+ * first row *is* the original's last row, so the two always meet exactly, top-to-bottom
+ * and bottom-to-top alike. The cost is a mirror symmetry every two tiles, which on a
+ * river bank of gravel and driftwood is invisible; on anything with an up and a down it
+ * would not be.
+ *
+ * Unlike [drawCovering] this scales to the canvas *width* only, since the tiling covers
+ * the height however tall the image happens to be. So the horizontal fit is exact, which
+ * matters: the rafting minigame puts its banks at fixed scene coordinates and a backdrop
+ * cropped sideways would paint them somewhere else.
+ *
+ * Tile edges are rounded to whole device pixels and each tile's height is taken from the
+ * *next* tile's rounded top rather than from its own — otherwise a fractional tile height
+ * rounds independently at each end and leaves a one-pixel seam flickering down the screen.
+ */
+private fun DrawScope.drawScrolling(image: ImageBitmap, offsetPx: Float) {
+    val tileHeight = size.width / image.width * image.height
+    // Wrapping to one full mirror period — two tiles — keeps the arithmetic below in the
+    // range where a Float still has pixel precision, however long the descent runs.
+    val phase = offsetPx.mod(tileHeight * 2f)
+    var index = floor(-phase / tileHeight).toInt()
+    var top = (index * tileHeight + phase).roundToInt()
+
+    while (top < size.height) {
+        val next = ((index + 1) * tileHeight + phase).roundToInt()
+        val height = (next - top).toFloat()
+        if (index.mod(2) == 0) {
+            draw(image, 0f, top.toFloat(), size.width, height)
+        } else {
+            scale(scaleX = 1f, scaleY = -1f, pivot = Offset(size.width / 2f, top + height / 2f)) {
+                draw(image, 0f, top.toFloat(), size.width, height)
+            }
+        }
+        index++
+        top = next
+    }
 }
 
 /**

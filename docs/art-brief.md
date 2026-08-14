@@ -88,13 +88,20 @@ Because a sprite sits on the bottom of its footprint, a subject should be drawn 
 its feet at the bottom of the file**. Trailing empty space below the subject is cropped
 away by the prepare script, so this mostly takes care of itself.
 
+A footprint is a request, not a promise the art has to keep. Fitting without distortion
+means a subject drawn a different shape from its box is drawn *smaller* than the box, and
+in the two minigames the box is also the hit box — so a raft narrower than its footprint
+collects hits in water it can be seen not to be in. When authored art comes back a
+different shape, the footprint is re-measured to match it and the code follows; the
+numbers below are the ones the shipped art actually has.
+
 The full-bleed screens (landmarks, rivers, the store, the title) hand the backdrop the
 whole display, cropping it into the round silhouette — the reason those want margin on
 every side.
 
 ## The assets
 
-74 in total. Priorities are about unblocking work, not importance — **P0 makes the game
+83 in total. Priorities are about unblocking work, not importance — **P0 makes the game
 playable at all**, so do those first. "Footprint" is the sprite's box in scene units;
 backdrops have none, since they cover the frame.
 
@@ -207,6 +214,61 @@ individual people — a trader, a guide, a fellow traveller — drawn without et
 caricature, costume shorthand, or "type" signalling. If a portrait only reads as its
 category through a stereotype, redraw it so it reads through what the person is *doing*
 instead.
+
+### P3 — rafting the Columbia (9)
+
+The game's ending: a real-time run down the Columbia in which the player steers the raft
+with the crown, dodging rocks, and lands at the path up the bank. It is the only screen
+in the game seen from **directly overhead** rather than side-on — the 1985 original used
+an abstract 45° angle for the same sequence, and the watch's round frame reads better
+looking straight down at a channel than across one. See docs/reference/game-mechanics-1985.md.
+
+**The river flows down the screen.** The raft sits near the bottom and moves only left
+and right; rocks scroll from top to bottom past it. Nothing here is drawn side-on, and
+nothing here faces right — draw everything as seen from above, with the current running
+top to bottom.
+
+| File | Footprint | What it is |
+|---|---|---|
+| `river_bank` | **backdrop, no wider than tall** | The channel from above: water down the middle, rock and timber banks up both sides. See the geometry note below — this one asset has hard constraints. |
+| `raft_1` | 22x27 | The raft from above: lashed logs with the wagon box and an ox or two aboard, bow pointing **down** the screen. |
+| `raft_2` | 22x27 | The same raft, bobbing. Frame 2 of a two-frame cycle — shift the load and the wake, not the outline. |
+| `rock_small` | 14x15 | A midstream boulder from above, white water breaking around it. |
+| `rock_large` | 22x26 | A bigger one. Must read as *the same kind of thing* as `rock_small` at a glance — the player has a half-second to judge which. |
+| `raft_foam` | 10x3 | A speck of foam or a wave crest. Drawn many at once, scrolling, to break up the river's repeat and to throw spray where something is struck. Keep it nearly abstract. |
+| `raft_sign` | 10x17 | A direction sign staked on the bank, seen from above at a slight lean so the board is legible. Three of these pass on the way down; the third means land. |
+| `raft_landing` | 28x34 | The landing: a beach and a squiggly path up the bank. This is the target the player must steer into — make it the most obvious thing on the screen when it appears. |
+| `raft_wreck` | backdrop | The raft breaking up on the rocks, for the result screen. The counterpart to `river_capsize`, and it should land just as hard. |
+
+**The backdrop's geometry is load-bearing, unusually.** `river_bank` is the one backdrop
+in the game that **moves**, and the only one that is not a wide landscape. It scrolls up
+the display against the current as an endless strip of itself alternating with a
+vertically flipped copy, so that consecutive tiles always meet exactly — a flipped copy's
+first row *is* the original's last. Two things follow:
+
+- It is scaled to the display's **width**, exactly, and never cropped sideways. The
+  height is free, except that one tile has to cover at least a full screen or the river
+  visibly repeats within a single view — so **no wider than it is tall**, which a unit
+  test enforces.
+- **Distinctive features on the banks are fine, and welcome.** Under the original static
+  backdrop they were forbidden, because a memorable boulder would have sat frozen while
+  the water appeared to move past it. Now the bank travels with the water. The one thing
+  to avoid is anything with an up and a down — a standing figure, a beached boat — since
+  every other tile is upside down.
+
+Within the width:
+
+- The **navigable channel is the central 70%** — scene units 19 to 109 of 128. Rocks
+  spawn only inside it, and the raft is stopped at its edges. Because the art scrolls,
+  *every* row of it passes the raft, so those are the innermost extents over the whole
+  file rather than an average: no rock anywhere in the image may reach past them.
+- The **outer ~19 units either side are bank**, and the raft hitting them is the most
+  expensive mistake in the minigame. Make them read as *solid* — rock shelf, logjam,
+  gravel — not as gently shelving beach.
+- Keep the water itself quiet. Every rock, sign, and speck of foam is drawn on top of
+  it, and a busy river bottom makes a boulder invisible until it is too late.
+- The corners are behind the bezel, as always. The banks only need to read across the
+  middle two thirds of the height.
 
 ## Checking your work
 

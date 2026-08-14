@@ -149,8 +149,10 @@ class RiverCrossingTest {
     @Test
     fun `a capsize costs supplies`() {
         // Force the issue with the deepest river and enough seeds to guarantee a loss.
+        // The Columbia was once deeper still, but it is no longer a crossing at all —
+        // it is run on a raft now, and belongs to `RaftingTest`.
         val loss = (1L..200L).asSequence().map { seed ->
-            val state = atRiver(LandmarkId.COLUMBIA_RIVER, seed = seed)
+            val state = atRiver(LandmarkId.GREEN_RIVER, seed = seed)
             val conditions = RiverCrossing.conditionsAt(state)!!
             state to RiverCrossing.cross(state, conditions, CrossingMethod.FORD)
         }.first { (_, outcome) -> outcome.result != CrossingResult.Safe }

@@ -40,10 +40,10 @@ object TestStates {
     /**
      * Advances [days] days, returning every state and event along the way.
      *
-     * Rivers and branch points are resolved automatically — caulk across, take the
-     * first route — because [TurnEngine.advanceDay] deliberately refuses to travel
-     * while a decision is pending. Without that, any test running longer than the first
-     * 102 miles would silently stall at the Kansas River.
+     * Rivers, rapids and branch points are resolved automatically — caulk across, run
+     * the Columbia cleanly, take the first route — because [TurnEngine.advanceDay]
+     * deliberately refuses to travel while a decision is pending. Without that, any test
+     * running longer than the first 102 miles would silently stall at the Kansas River.
      */
     fun run(state: GameState, days: Int): List<DayResult> {
         val results = mutableListOf<DayResult>()
@@ -52,10 +52,13 @@ object TestStates {
             if (s.isOver) return@repeat
             if (s.awaitingDecision) {
                 val conditions = RiverCrossing.conditionsAt(s)
-                s = if (conditions != null) {
-                    RiverCrossing.cross(s, conditions, CrossingMethod.CAULK).state
-                } else {
-                    TurnEngine.chooseRoute(s, s.currentLandmark.routes.first().to)
+                s = when {
+                    conditions != null ->
+                        RiverCrossing.cross(s, conditions, CrossingMethod.CAULK).state
+                    Rafting.isAtRapids(s) ->
+                        Rafting.finish(s, Rafting.start(s), impacts = emptyList(), landed = true)
+                            .day.state
+                    else -> TurnEngine.chooseRoute(s, s.currentLandmark.routes.first().to)
                 }
                 if (s.isOver) return@repeat
             }

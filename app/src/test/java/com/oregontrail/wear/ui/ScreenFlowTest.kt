@@ -48,6 +48,21 @@ class ScreenFlowTest {
         assertEquals(Screen.River, resumeScreen(atRiver))
     }
 
+    /**
+     * The rapids demand the raft, not the crossing menu.
+     *
+     * These are the same state — at a landmark, `heading` null — and the only thing that
+     * tells them apart is the landmark's kind. Getting this wrong would strand the
+     * player on a ford/caulk/ferry menu for a river that has none of those.
+     */
+    @Test
+    fun `reaching the rapids demands the raft screen`() {
+        val atTheColumbia = TestStates.outfitted()
+            .copy(at = LandmarkId.COLUMBIA_RIVER, heading = null)
+        assertEquals(Screen.Raft, demandedScreen(atTheColumbia))
+        assertEquals(Screen.Raft, resumeScreen(atTheColumbia))
+    }
+
     @Test
     fun `reaching a branch demands the fork screen`() {
         val atBranch = TestStates.outfitted().copy(at = LandmarkId.SOUTH_PASS, heading = null)

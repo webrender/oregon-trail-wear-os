@@ -322,6 +322,7 @@ fun IconValue(
     iconArt: String,
     value: String,
     modifier: Modifier = Modifier,
+    color: androidx.compose.ui.graphics.Color = AppleII.Green,
 ) {
     Row(
         modifier = modifier,
@@ -332,7 +333,7 @@ fun IconValue(
         Spacer(Modifier.width(4.dp))
         Text(
             text = value,
-            color = AppleII.Green,
+            color = color,
             style = MaterialTheme.typography.caption1,
         )
     }

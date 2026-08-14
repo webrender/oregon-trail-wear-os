@@ -18,6 +18,9 @@ import com.oregontrail.wear.core.LandmarkId
 import com.oregontrail.wear.core.Pace
 import com.oregontrail.wear.core.PartyNames
 import com.oregontrail.wear.core.Profession
+import com.oregontrail.wear.core.RaftImpact
+import com.oregontrail.wear.core.RaftOutcome
+import com.oregontrail.wear.core.Rafting
 import com.oregontrail.wear.core.Rations
 import com.oregontrail.wear.core.Rng
 import com.oregontrail.wear.core.RiverConditions
@@ -242,6 +245,7 @@ class GameController(
         ticker = null
         crossingResult = null
         crossingMethod = null
+        raftOutcome = null
         screen = Screen.Title
     }
 
@@ -359,6 +363,38 @@ class GameController(
         screen = resumeScreen(game)
     }
 
+    // ---- Rafting the Columbia ----
+
+    /**
+     * How the descent went, held so the result screen can show it.
+     *
+     * The descent itself keeps no state here at all — see
+     * [com.oregontrail.wear.ui.screens.RaftScreen], which owns the whole real-time loop
+     * and reports once, at the end. There is nothing to resume: a run interrupted
+     * part-way down is a run that never happened, exactly like an interrupted hunt.
+     */
+    var raftOutcome: RaftOutcome? by mutableStateOf(null)
+        private set
+
+    /**
+     * Books a finished descent. Called once, when the landing has been made, missed, or
+     * put beyond reach by the raft breaking up.
+     */
+    fun finishRaft(impacts: List<RaftImpact>, landed: Boolean) {
+        val current = game
+        val outcome = Rafting.finish(current, Rafting.start(current), impacts, landed)
+        commit(outcome.day.state)
+        absorb(outcome.day.events)
+        raftOutcome = outcome
+    }
+
+    /** Acknowledges the descent's result and carries on to Oregon City. */
+    fun dismissRaft() {
+        raftOutcome = null
+        val current = game
+        screen = if (current.isOver) Screen.GameOver else resumeScreen(current)
+    }
+
     // ---- Encounters ----
 
     /** Waves off a traveller, or declines a trade or a guide's offer. */
@@ -434,6 +470,7 @@ class GameController(
         pendingEncounter = null
         crossingResult = null
         crossingMethod = null
+        raftOutcome = null
         ticker = null
         screen = destination
     }

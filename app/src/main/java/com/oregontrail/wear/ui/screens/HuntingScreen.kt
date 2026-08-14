@@ -4,10 +4,15 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,6 +31,8 @@ import androidx.compose.ui.unit.dp
 import androidx.wear.compose.material.CompactChip
 import androidx.wear.compose.material.Text
 import com.oregontrail.wear.core.Animal
+import com.oregontrail.wear.core.Good
+import com.oregontrail.wear.core.Hunting
 import com.oregontrail.wear.ui.GameController
 import com.oregontrail.wear.ui.art.ArtLoader
 import com.oregontrail.wear.ui.art.ArtNames
@@ -35,8 +42,7 @@ import com.oregontrail.wear.ui.art.Scene
 import com.oregontrail.wear.ui.art.Sprite
 import com.oregontrail.wear.ui.art.spriteEdgePx
 import com.oregontrail.wear.ui.components.Gap
-import com.oregontrail.wear.ui.components.ScreenText
-import com.oregontrail.wear.ui.components.ScreenTitle
+import com.oregontrail.wear.ui.components.IconValue
 import com.oregontrail.wear.ui.theme.AppleII
 import com.oregontrail.wear.ui.theme.AppleIIChrome
 import kotlinx.coroutines.Dispatchers
@@ -220,7 +226,6 @@ fun HuntingScreen(controller: GameController) {
     var bulletsUsed by remember { mutableIntStateOf(0) }
     var meatShot by remember { mutableIntStateOf(0) }
     var bearsEscaped by remember { mutableIntStateOf(0) }
-    var animalsShot by remember { mutableIntStateOf(0) }
     var active by remember { mutableStateOf<ActiveAnimal?>(null) }
     var carcass by remember { mutableStateOf<Carcass?>(null) }
     var bullet by remember { mutableStateOf<Bullet?>(null) }
@@ -241,7 +246,6 @@ fun HuntingScreen(controller: GameController) {
                 when {
                     target != null && target.contains(moved.x.toInt(), moved.y.toInt()) -> {
                         meatShot += controller.huntMeatRoll(target.animal)
-                        animalsShot++
                         carcass = Carcass(target.x.toInt(), target.y, elapsedMillis + CARCASS_MILLIS)
                         active = null
                         bullet = null
@@ -287,26 +291,60 @@ fun HuntingScreen(controller: GameController) {
         controller.finishHunt(bulletsUsed, meatShot, bearsEscaped)
     }
 
-    val secondsLeft = ((SESSION_MILLIS - elapsedMillis) / 1000L).coerceAtLeast(0L)
     val bulletsLeft = (startingBullets - bulletsUsed).coerceAtLeast(0)
+
+    // What the wagon would actually leave with, not what has been shot. Everything past
+    // the carry limit is left on the ground (see [Hunting.CARRY_LIMIT_POUNDS]), so a
+    // running total of meat shot is a number that does not become food — showing it was
+    // read, reasonably, as a promise the supplies screen then broke.
+    val carried = meatShot.coerceAtMost(Hunting.CARRY_LIMIT_POUNDS)
+    val atCarryLimit = meatShot >= Hunting.CARRY_LIMIT_POUNDS
 
     Box(
         modifier = Modifier.fillMaxSize().background(AppleII.Black),
         contentAlignment = Alignment.Center,
     ) {
         Column(
-            // Scene first, title after — the same order every other landmark-style
-            // screen uses, and not just for consistency: the round bezel narrows the
-            // safe width sharply near the top, so a full-width title placed there (as
-            // this screen originally had it) gets its edges eaten by the bezel. Putting
-            // it below the scene, in the middle of the display where the circle is
-            // widest, is what makes it safe to run full width. The 48dp top padding
-            // matches [com.oregontrail.wear.ui.components.RotaryScrollColumn]'s, for the
-            // same reason: it clears the scene's corners of the bezel above.
-            modifier = Modifier.fillMaxSize().padding(top = 48.dp),
+            // The readout goes *above* the scene, and this screen carries no heading.
+            //
+            // Both fall out of the same measurement: on the 384x384 watch the visible
+            // circle leaves only ~76 px below a full-width scene before the curve closes
+            // in, and the "End hunt" chip alone needs 64 of it. The layout this replaced
+            // stacked a heading and a stats line under the scene, each of which wrapped
+            // to two lines at this width; together they pushed the chip clean off the
+            // bottom of the display and left the wrapped tail of the stats line outside
+            // the bezel. It fit on the 454 emulator, which is where it was checked.
+            //
+            // The band above the scene was empty padding and is the only space left, so
+            // the live numbers go there and the heading goes away — during a 20-second
+            // reflex game the terrain art already says where you are, and meat and
+            // ammunition are what the player is actually watching.
+            // 28dp, not the 48dp every scrolling screen uses: the readout is narrower
+            // than a scene, so it can sit higher in the circle, and those 40 px are what
+            // the chip at the bottom needs.
+            modifier = Modifier.fillMaxSize().padding(top = 28.dp),
             verticalArrangement = Arrangement.Top,
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                // Shown as a fraction of the limit rather than a bare total, so the
+                // ceiling is visible before it is hit, and in orange once it is — at
+                // which point every further shot is a wasted bullet.
+                IconValue(
+                    iconArt = ArtNames.good(Good.FOOD),
+                    value = "$carried/${Hunting.CARRY_LIMIT_POUNDS}",
+                    color = if (atCarryLimit) AppleII.Orange else AppleII.Green,
+                )
+                Spacer(Modifier.width(8.dp))
+                IconValue(
+                    iconArt = ArtNames.good(Good.BULLETS),
+                    value = "$bulletsLeft",
+                )
+            }
+            Gap(2)
             Scene(
                 background = ArtNames.HUNT_TERRAIN,
                 modifier = Modifier.fillMaxWidth(0.85f).aspectRatio(2f),
@@ -367,14 +405,27 @@ fun HuntingScreen(controller: GameController) {
                     }
                 },
             )
-            Gap(4)
-            ScreenTitle("Hunting ${ground.displayName}")
-            ScreenText(
-                "$animalsShot down, $meatShot lb · $bulletsLeft bullets · ${secondsLeft}s",
-                color = AppleIIChrome.MutedGreen,
-                small = true,
-            )
-            Gap(10)
+            Gap(2)
+            // The session clock, as a bar rather than a digit count. There is no room
+            // left for a third number on this display, and a draining bar is the easier
+            // read anyway while the player is tracking a moving target.
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(0.85f)
+                    .height(4.dp)
+                    .background(AppleIIChrome.DimGreen),
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(
+                            ((SESSION_MILLIS - elapsedMillis).toFloat() / SESSION_MILLIS)
+                                .coerceIn(0f, 1f)
+                        )
+                        .fillMaxHeight()
+                        .background(AppleIIChrome.MutedGreen),
+                )
+            }
+            Gap(2)
             CompactChip(
                 onClick = { leaving = true },
                 label = { Text("End hunt") },

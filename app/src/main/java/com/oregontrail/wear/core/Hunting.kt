@@ -110,6 +110,6 @@ object Hunting {
                 foodPounds = state.inventory.foodPounds + carried,
             ),
         )
-        return HuntOutcome(TurnEngine.huntingDay(stocked), carried, wasted, bearsEscaped)
+        return HuntOutcome(TurnEngine.activeDay(stocked), carried, wasted, bearsEscaped)
     }
 }

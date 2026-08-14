@@ -155,16 +155,16 @@ object TurnEngine {
     }
 
     /**
-     * Spends a day hunting instead of travelling.
+     * Spends a day on something other than travelling, and other than sitting still.
      *
      * Food is eaten and illness resolves exactly as it would on a rest day — see [rest]
-     * — but health does not get [REST_RECOVERY]'s benefit: a hunt is a day spent on foot
-     * with a rifle, not a day sitting still. [Hunting.finish] calls this once a session
-     * is done to book the day itself; the meat and ammunition it cost are applied
-     * separately, before this runs, so that a party that goes hungry mid-hunt still
-     * starves on schedule.
+     * — but health does not get [REST_RECOVERY]'s benefit: a day spent hunting on foot,
+     * or working a raft down the Columbia, is exertion. [Hunting.finish] and
+     * [Rafting.finish] both call this to book the day itself once their session is over;
+     * whatever the session cost in supplies is applied separately, before this runs, so
+     * that a party that goes hungry during it still starves on schedule.
      */
-    fun huntingDay(state: GameState): DayResult {
+    fun activeDay(state: GameState): DayResult {
         if (state.isOver) return DayResult(state, emptyList())
 
         val events = mutableListOf<GameEvent>()
@@ -317,12 +317,14 @@ object TurnEngine {
 
         // A single onward route is taken automatically. `heading` is left null wherever
         // the party cannot simply walk on: at a branch until they choose, at a river
-        // until it is crossed (RiverCrossing sets the heading on the far bank), and at
-        // the end of the trail for good.
+        // until it is crossed (RiverCrossing sets the heading on the far bank), at the
+        // rapids until they have been run (Rafting does the same), and at the end of the
+        // trail for good.
         val nextHeading = when {
             destination.isEnd -> null
             destination.isBranch -> null
             destination.kind is LandmarkKind.River -> null
+            destination.kind is LandmarkKind.Rapids -> null
             else -> destination.routes.first().to
         }
 

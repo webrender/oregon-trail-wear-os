@@ -88,6 +88,27 @@ object ArtNames {
     fun animal(animal: Animal, frame: Int): String =
         "animal_${animal.name.lowercase()}_${frame + 1}"
 
+    /**
+     * The rafting minigame's assets — see docs/art-brief.md's P3 section.
+     *
+     * [RAFT_RIVER] is the one backdrop in the game that moves. It is drawn looking
+     * straight down at the channel and scrolled up the display against the current, as a
+     * strip of itself alternating with a vertically flipped copy — see `drawScrolling` in
+     * [Scene]. Its filename is the odd one out because it is what the art was authored
+     * as, and it belongs to the `river_` family of backdrops rather than to the
+     * minigame's sprites.
+     */
+    const val RAFT_RIVER: String = "river_bank"
+    const val ROCK_SMALL: String = "rock_small"
+    const val ROCK_LARGE: String = "rock_large"
+    const val RAFT_FOAM: String = "raft_foam"
+    const val RAFT_SIGN: String = "raft_sign"
+    const val RAFT_LANDING: String = "raft_landing"
+    const val RAFT_WRECK: String = "raft_wreck"
+
+    /** The two frames of the raft's bob on the water. */
+    val raftBob: List<String> = listOf("raft_1", "raft_2")
+
     const val HUNT_TERRAIN: String = "hunt_terrain"
     const val HUNT_CARCASS: String = "hunt_carcass"
     const val HUNT_BULLET: String = "hunt_bullet"
