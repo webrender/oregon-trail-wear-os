@@ -247,7 +247,7 @@ fun MenuChip(
             }
         },
         icon = iconArt?.let {
-            { PixelArtImage(name = it, modifier = Modifier.size(24.dp), maxScale = 2) }
+            { PixelArtImage(name = it, size = 24.dp) }
         },
         colors = if (primary) {
             ChipDefaults.primaryChipColors()
@@ -318,7 +318,7 @@ fun IconValue(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.Center,
     ) {
-        PixelArtImage(name = iconArt, modifier = Modifier.size(16.dp), maxScale = 2)
+        PixelArtImage(name = iconArt, size = 16.dp)
         Spacer(Modifier.width(4.dp))
         Text(
             text = value,

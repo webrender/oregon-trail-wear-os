@@ -53,12 +53,12 @@ android {
 /**
  * Tell Gradle that the unit tests read the art assets.
  *
- * `PixelArtTest` and `ArtNamesTest` both open `src/main/assets/art` directly as files,
- * which Gradle cannot see: assets are not on the unit test classpath, so nothing in the
- * task's declared inputs changes when a `.pix` file does. The result was a test task that
- * reported UP-TO-DATE across seventy newly added assets and never validated any of them —
- * a build-time guard that was silently not running. Declaring the directory as an input
- * restores the guarantee the art brief claims.
+ * `ArtNamesTest` opens `src/main/assets/art` directly as files, which Gradle cannot see:
+ * assets are not on the unit test classpath, so nothing in the task's declared inputs
+ * changes when an asset does. The result was a test task that reported UP-TO-DATE across
+ * seventy newly added assets and never validated any of them — a build-time guard that
+ * was silently not running. Declaring the directory as an input restores the guarantee
+ * the art brief claims.
  */
 tasks.withType<Test>().configureEach {
     inputs.dir(layout.projectDirectory.dir("src/main/assets"))

@@ -1,6 +1,0 @@
-# A single travelling pixel: the bullet in flight during a hunt.
-# Palette: . transparent, K black, W white, G green, V violet, O orange, B blue
-name: hunt_bullet
-size: 1x1
-pixels:
-W

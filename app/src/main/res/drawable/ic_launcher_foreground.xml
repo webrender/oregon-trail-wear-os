@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- The wagon from icon_wagon.pix (see app/src/main/assets/art), rasterised once at a
+<!-- The wagon from icon_wagon.png (see app/src/main/assets/art), rasterised once at a
      fixed size with hard nearest-neighbour edges — the same wagon the in-game supplies
      readout uses.
 

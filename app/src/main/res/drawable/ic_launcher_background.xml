@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Sky and grass, the same two colours (and roughly the same horizon line) every
-     terrain scene in the game uses — see terrain_prairie.pix etc. and ApplePalette.
+     terrain scene in the game uses — see terrain_prairie.png etc. and AppleII.kt.
      Replaces a flat black background specifically so the wagon's black outline and
      wheels have something to read against: black-on-black made most of the wagon
      disappear into the background in Wear's own circular icon treatment. The horizon

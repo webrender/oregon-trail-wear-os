@@ -12,3 +12,13 @@ build/
 # Emulator/device captures from the iteration loop — useful while working,
 # not worth versioning.
 screenshots/
+
+# The authored art masters that scripts/prepare-art.py reads — ~67MB, versus 16MB of
+# prepared assets, because the script downscales each one to the largest size the app
+# actually draws it at. Kept out of git to avoid quintupling an already art-heavy
+# repository with resolution nothing can display.
+#
+# The consequence is that the shipped assets are NOT a full-resolution copy of these:
+# back the masters up somewhere, or a future layout that wants a bigger draw size will
+# have nothing to regenerate from.
+art-source/

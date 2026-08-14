@@ -24,6 +24,8 @@ import com.oregontrail.wear.core.Rations
 import com.oregontrail.wear.ui.GameController
 import com.oregontrail.wear.ui.Screen
 import com.oregontrail.wear.ui.art.ArtNames
+import com.oregontrail.wear.ui.art.SCENE_HEIGHT
+import com.oregontrail.wear.ui.art.SCENE_WIDTH
 import com.oregontrail.wear.ui.art.Scene
 import com.oregontrail.wear.ui.art.Sprite
 import com.oregontrail.wear.ui.components.Gap
@@ -53,15 +55,26 @@ private const val WALK_FRAME_MILLIS = 240L
  * two-frame walk cycle in the art brief is built for. A wagon that actually crossed the
  * frame would have to leave it, and there is nowhere for it to go.
  */
-private const val WAGON_X = (128 - 56) / 2
-private const val WAGON_Y = 30
+private const val WAGON_WIDTH = 56
+private const val WAGON_HEIGHT = 28
+private const val WAGON_X = (SCENE_WIDTH - WAGON_WIDTH) / 2
+
+/**
+ * Standing on the bottom edge of the scene rather than on the horizon, because the
+ * horizon moves: the terrain art puts it anywhere from a third of the way down (the
+ * Rockies) to four fifths (the plains), and only the very bottom of the frame is ground
+ * in every one of them.
+ */
+private const val WAGON_Y = SCENE_HEIGHT - WAGON_HEIGHT
 
 /**
  * Off to the right of the wagon, clear of its walk cycle and the terrain's usual busy
  * middle third.
  */
+private const val MARKER_WIDTH = 16
+private const val MARKER_HEIGHT = 20
 private const val MARKER_X = 104
-private const val MARKER_Y = 38
+private const val MARKER_Y = SCENE_HEIGHT - MARKER_HEIGHT
 
 /**
  * Roughly one day in [MARKER_PERIOD], the party passes a roadside marker — another
@@ -128,14 +141,18 @@ fun TrailScreen(controller: GameController) {
             Gap(4)
             Scene(
                 background = ArtNames.terrain(heading, state.weather),
-                // 0.85 of a 454px screen is 386px, which floors to exactly x3 for a
-                // 128-wide scene. Full width would floor to x3 as well but leave the art
-                // touching the bezel.
+                // 0.85 rather than full width so the scene's corners stay clear of the
+                // bezel on a round display.
                 modifier = Modifier.fillMaxWidth(0.85f).aspectRatio(2f),
                 sprites = buildList {
-                    add(Sprite(wagon, WAGON_X, WAGON_Y))
+                    add(Sprite(wagon, WAGON_X, WAGON_Y, WAGON_WIDTH, WAGON_HEIGHT))
                     if (state.dayOfJourney > 0 && state.dayOfJourney % MARKER_PERIOD == 0) {
-                        add(Sprite(ArtNames.TRAIL_MARKER, MARKER_X, MARKER_Y))
+                        add(
+                            Sprite(
+                                ArtNames.TRAIL_MARKER,
+                                MARKER_X, MARKER_Y, MARKER_WIDTH, MARKER_HEIGHT,
+                            )
+                        )
                     }
                 },
             )

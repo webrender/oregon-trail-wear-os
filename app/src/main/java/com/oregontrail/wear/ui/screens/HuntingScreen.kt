@@ -62,13 +62,20 @@ private const val HUNTER_HEIGHT = 20
 private const val HUNTER_X = (SCENE_WIDTH - HUNTER_WIDTH) / 2
 private const val HUNTER_Y = SCENE_HEIGHT - HUNTER_HEIGHT
 
+/** The carcass a downed animal leaves behind, in scene units. */
+private const val CARCASS_WIDTH = 16
+private const val CARCASS_HEIGHT = 10
+
 /**
- * Where the rifle's muzzle flash sits in `hunter_shoot`'s own 16x20 grid — read off the
- * `.pix` source rather than guessed, since it's the one point on the hunter that isn't
- * roughly centred: the barrel is held out to the right.
+ * Where the rifle's muzzle sits in the hunter's own box — the one point on him that is
+ * nowhere near centred, since the barrel is held straight out to the right.
+ *
+ * Measured off `hunter_shoot.png` rather than guessed. The art is trimmed to its visible
+ * pixels, so the muzzle is the rightmost thing in the file and lands exactly on the right
+ * edge of the box; the barrel sits a little over a fifth of the way down.
  */
-private const val MUZZLE_X = HUNTER_X + 13
-private const val MUZZLE_Y = HUNTER_Y + 9
+private const val MUZZLE_X = HUNTER_X + HUNTER_WIDTH
+private const val MUZZLE_Y = HUNTER_Y + 6
 
 /**
  * Scene-pixels the bullet covers per tick. Faster than any animal on purpose — the
@@ -79,7 +86,12 @@ private const val MUZZLE_Y = HUNTER_Y + 9
  */
 private const val BULLET_SPEED_PER_TICK = 3.5f
 
-/** Authored sprite dimensions, per docs/art-brief.md — not derivable from the model. */
+/**
+ * How much of the scene an animal takes up, and so also how big a target it is — see
+ * [Sprite] and docs/art-brief.md. A game-balance number rather than an art one: the
+ * artwork is fitted into this box, and [ActiveAnimal.contains] aims at the same box, so a
+ * bear is easier to hit than a squirrel by exactly as much as it looks.
+ */
 private fun Animal.width(): Int = when (this) {
     Animal.SQUIRREL -> 10
     Animal.RABBIT -> 12
@@ -264,26 +276,33 @@ fun HuntingScreen(controller: GameController) {
                 modifier = Modifier.fillMaxWidth(0.85f).aspectRatio(2f),
                 sprites = buildList {
                     active?.let {
-                        // The run-cycle art is drawn facing left (confirmed by rendering
-                        // the .pix source — the head/horns are on the left edge in every
-                        // animal frame); mirror it when heading right, or it walks with
-                        // its back to the direction of travel.
+                        // Every animal is drawn facing right — head and horns on the
+                        // right edge in all ten frames — so it is the leftward run that
+                        // needs mirroring, or the animal walks backwards.
                         add(
                             Sprite(
                                 ArtNames.animal(it.animal, it.frame),
                                 it.x.toInt(),
                                 it.y,
-                                flip = it.rightward,
+                                it.animal.width(),
+                                it.animal.height(),
+                                flip = !it.rightward,
                             )
                         )
                     }
-                    carcass?.let { add(Sprite(ArtNames.HUNT_CARCASS, it.x, it.y)) }
-                    bullet?.let { add(Sprite(ArtNames.HUNT_BULLET, it.x.toInt(), it.y.toInt())) }
+                    carcass?.let {
+                        add(Sprite(ArtNames.HUNT_CARCASS, it.x, it.y, CARCASS_WIDTH, CARCASS_HEIGHT))
+                    }
+                    bullet?.let {
+                        add(Sprite(ArtNames.HUNT_BULLET, it.x.toInt(), it.y.toInt(), 1, 1))
+                    }
                     add(
                         Sprite(
                             if (shotFlash) ArtNames.HUNTER_SHOOT else ArtNames.HUNTER_STAND,
                             HUNTER_X,
                             HUNTER_Y,
+                            HUNTER_WIDTH,
+                            HUNTER_HEIGHT,
                         )
                     )
                 },

@@ -9,7 +9,7 @@ import com.oregontrail.wear.core.TerrainRegion
 import com.oregontrail.wear.core.Weather
 
 /**
- * Which `.pix` asset stands for what.
+ * Which art asset stands for what.
  *
  * Kept pure and free of Android imports so the mapping can be tested against the files
  * on disk under plain JUnit. That test matters more than it looks: a wrong name here

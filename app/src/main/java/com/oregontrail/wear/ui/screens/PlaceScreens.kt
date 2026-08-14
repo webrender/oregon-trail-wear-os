@@ -232,7 +232,7 @@ fun EventScreen(controller: GameController) {
             verticalArrangement = Arrangement.Center,
         ) {
             if (art != null) {
-                PixelArtImage(name = art, modifier = Modifier.size(120.dp), maxScale = 3)
+                PixelArtImage(name = art, size = 120.dp)
                 Gap(8)
             }
             ScreenText(text)
@@ -298,7 +298,7 @@ fun GameOverScreen(controller: GameController) {
         }
 
         Outcome.PartyLost, null -> RotaryScrollColumn {
-            PixelArtImage(name = "tombstone", modifier = Modifier.size(120.dp), maxScale = 3)
+            PixelArtImage(name = "tombstone", size = 120.dp)
             Gap(8)
             ScreenTitle("The journey ends")
             ScreenText(
@@ -329,11 +329,7 @@ fun EncounterScreen(controller: GameController) {
     val state = controller.game
 
     RotaryScrollColumn {
-        PixelArtImage(
-            name = ArtNames.forEncounter(encounter),
-            modifier = Modifier.size(96.dp),
-            maxScale = 3,
-        )
+        PixelArtImage(name = ArtNames.forEncounter(encounter), size = 96.dp)
         Gap(8)
         when (encounter) {
             is Encounter.Traveler -> {

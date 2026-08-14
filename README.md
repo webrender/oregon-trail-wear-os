@@ -33,9 +33,9 @@ All captured on the `Wear_OS_Large_Round` emulator (454×454, API 33).
 - **No free text anywhere.** Party names come from a curated period-appropriate list,
   hunting is aim-and-fire with the crown and a tap, and every decision — pace, rations,
   river crossings, purchases — is a picker or a stepper, never a keyboard.
-- **Pixel art in six colours**, reminiscent of Apple II composite-NTSC rendering but
-  drawn from scratch — no original MECC art is used or referenced pixel-for-pixel. See
-  [`docs/art-brief.md`](docs/art-brief.md) for the full palette and asset pipeline.
+- **Pixel art**, reminiscent of Apple II composite-NTSC rendering but drawn from
+  scratch — no original MECC art is used or referenced pixel-for-pixel. See
+  [`docs/art-brief.md`](docs/art-brief.md) for the style guide and asset pipeline.
 - **UI text is set in Shaston**, the Apple IIGS system font, vendored under its free-use
   licence (see [`NOTICE.md`](NOTICE.md)).
 
@@ -71,7 +71,7 @@ by ~150 JVM unit tests with no emulator needed:
   crossings, scoring, RNG. Plain Kotlin, unaware Android exists.
 - `ui/` — Jetpack Compose for Wear OS. `Screen.kt` is a small sealed navigation graph;
   `GameController` drives it from `core`'s state and handles save/resume.
-- `ui/art/` — the pixel-art renderer, reading `.pix` assets from `assets/art/`.
+- `ui/art/` — the art renderer, reading PNG assets from `assets/art/`.
 
 ## Status
 

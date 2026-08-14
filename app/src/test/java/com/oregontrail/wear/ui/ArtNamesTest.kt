@@ -26,7 +26,7 @@ class ArtNamesTest {
     private val artDirectory = File("src/main/assets/art")
 
     private fun assertArtExists(name: String, context: String) {
-        val file = File(artDirectory, "$name.pix")
+        val file = File(artDirectory, "$name.png")
         assertTrue("$context refers to missing art '$name' (${file.absolutePath})", file.isFile)
     }
 
