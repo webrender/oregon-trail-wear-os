@@ -23,6 +23,8 @@ All captured on the `Wear_OS_Large_Round` emulator (454×454, API 33).
 | A trail encounter | Checking supplies |
 | ![Kansas River Crossing](docs/images/river.png) | ![Choosing how to cross](docs/images/river-choice.png) |
 | Arriving at a river | Choosing how to cross |
+| ![Fording the Kansas](docs/images/crossing.png) | ![Fort Kearney](docs/images/fort.png) |
+| Fording safely | Arriving at a fort |
 | ![The hunting minigame](docs/images/hunting.png) | ![Confirming abandonment of a run](docs/images/abandon.png) |
 | Hunting the prairie | Abandoning a run (no undo) |
 
