@@ -66,7 +66,11 @@ enum class Good(val displayName: String, val purchaseUnit: String, val baseCents
     OXEN("Oxen", "yoke of 2", 20_00),
     FOOD("Food", "pound", 20),
     CLOTHING("Clothing", "set", 10_00),
-    BULLETS("Ammunition", "box of 20", 2_00),
+    // "Bullets", not "Ammunition": a store row's label gets 204 pixels on the physical
+    // watch and "Ammunition" needs 234, so it broke mid-word as "Ammuniti / on" — the one
+    // label here with no space to wrap at. "Bullets" fits on one line and is the word the
+    // rest of the game already uses (see Format.kt's describeQuantity).
+    BULLETS("Bullets", "box of 20", 2_00),
     SPARE_WHEEL("Wagon wheel", "each", 10_00),
     SPARE_AXLE("Wagon axle", "each", 10_00),
     SPARE_TONGUE("Wagon tongue", "each", 10_00);

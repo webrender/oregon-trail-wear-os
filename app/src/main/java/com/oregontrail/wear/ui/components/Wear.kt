@@ -242,7 +242,17 @@ fun MenuChip(
                 Text(
                     text = it,
                     style = MaterialTheme.typography.caption2,
-                    maxLines = 1,
+                    // Two lines, not one. A chip on the 384-pixel watch leaves only about
+                    // 204 pixels for its labels (320 wide, less 28 of chip padding either
+                    // side, less a 48-pixel icon and its 12-pixel gap) against 274 on the
+                    // 454-pixel emulator — and this font is sized in device pixels, so it
+                    // does not shrink to compensate. Anything budgeted against the
+                    // emulator loses its tail on the watch, with no ellipsis: the default
+                    // overflow chops mid-glyph. A second line is free here — Wear's chip
+                    // has a 52.dp minimum height and one label line plus one secondary
+                    // line only fills 36 of it — so callers can split a two-fact label
+                    // across two short lines rather than shortening the copy.
+                    maxLines = 2,
                 )
             }
         },

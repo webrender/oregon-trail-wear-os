@@ -58,8 +58,13 @@ fun StoreScreen(controller: GameController) {
         for (good in Good.entries) {
             MenuChip(
                 label = good.displayName,
-                secondaryLabel = "${money(store.priceCents(good))}/${good.shortUnit}" +
-                    " · have ${owned(controller, good)}",
+                // Price and holding on their own lines. Run together on one line they
+                // came to 306 pixels for food ("$0.20/lb · have 200 lb") against the 204
+                // a chip label gets on the physical watch, and the tail was silently cut
+                // off mid-character — see [MenuChip]. Split, the longest either line
+                // reaches is 178.
+                secondaryLabel = "${money(store.priceCents(good))}/${good.shortUnit}\n" +
+                    "have ${owned(controller, good)}",
                 iconArt = ArtNames.good(good),
                 onClick = { controller.go(Screen.StoreItem(good)) },
             )
