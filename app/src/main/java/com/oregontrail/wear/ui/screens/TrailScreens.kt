@@ -19,6 +19,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
+import com.oregontrail.wear.core.Good
 import com.oregontrail.wear.core.Pace
 import com.oregontrail.wear.core.Rations
 import com.oregontrail.wear.ui.GameController
@@ -36,6 +37,8 @@ import com.oregontrail.wear.ui.components.RotaryScrollColumn
 import com.oregontrail.wear.ui.components.ScreenText
 import com.oregontrail.wear.ui.components.ScreenTitle
 import com.oregontrail.wear.ui.components.StaticScreen
+import com.oregontrail.wear.ui.counted
+import com.oregontrail.wear.ui.describeQuantity
 import com.oregontrail.wear.ui.money
 import com.oregontrail.wear.ui.theme.AppleII
 import com.oregontrail.wear.ui.theme.AppleIIChrome
@@ -159,7 +162,8 @@ fun TrailScreen(controller: GameController) {
             Gap(4)
             Text(
                 text = if (moving) {
-                    "${state.milesToNextLandmark} miles to ${state.headingLandmark?.name ?: "?"}"
+                    counted(state.milesToNextLandmark, "mile") +
+                        " to ${state.headingLandmark?.name ?: "?"}"
                 } else {
                     "The wagon cannot move"
                 },
@@ -295,15 +299,18 @@ fun SuppliesScreen(controller: GameController) {
         item {
             IconValue("icon_health", "${state.party.health.displayName}, ${state.party.survivorCount} alive")
         }
-        item { IconValue("icon_food", "${inventory.foodPounds} lb food") }
-        item { IconValue("icon_ox", "${inventory.oxen} oxen") }
-        item { IconValue("icon_clothing", "${inventory.clothingSets} clothing") }
-        item { IconValue("icon_bullets", "${inventory.bullets} bullets") }
-        item { IconValue("icon_wheel", "${inventory.spareWheels} wheels") }
-        item { IconValue("icon_axle", "${inventory.spareAxles} axles") }
-        item { IconValue("icon_tongue", "${inventory.spareTongues} tongues") }
+        // Same phrasing as a trade offer, and for the same reason: these are internal
+        // units, not the store's purchase units. Sharing describeQuantity keeps the
+        // singular/plural agreement in one place rather than two.
+        item { IconValue("icon_food", Good.FOOD.describeQuantity(inventory.foodPounds)) }
+        item { IconValue("icon_ox", Good.OXEN.describeQuantity(inventory.oxen)) }
+        item { IconValue("icon_clothing", Good.CLOTHING.describeQuantity(inventory.clothingSets)) }
+        item { IconValue("icon_bullets", Good.BULLETS.describeQuantity(inventory.bullets)) }
+        item { IconValue("icon_wheel", Good.SPARE_WHEEL.describeQuantity(inventory.spareWheels)) }
+        item { IconValue("icon_axle", Good.SPARE_AXLE.describeQuantity(inventory.spareAxles)) }
+        item { IconValue("icon_tongue", Good.SPARE_TONGUE.describeQuantity(inventory.spareTongues)) }
         item { IconValue("icon_money", money(inventory.cashCents)) }
-        item { IconValue("icon_wagon", "${state.totalMiles} miles") }
+        item { IconValue("icon_wagon", counted(state.totalMiles, "mile")) }
         item {
             ScreenText(
                 "Party: " + state.party.members.joinToString(", ") {

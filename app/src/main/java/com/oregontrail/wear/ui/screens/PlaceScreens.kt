@@ -29,6 +29,7 @@ import com.oregontrail.wear.ui.components.SceneScrollColumn
 import com.oregontrail.wear.ui.components.ScreenText
 import com.oregontrail.wear.ui.components.ScreenTitle
 import com.oregontrail.wear.ui.components.StaticScreen
+import com.oregontrail.wear.ui.counted
 import com.oregontrail.wear.ui.describeQuantity
 import com.oregontrail.wear.ui.money
 import com.oregontrail.wear.ui.short
@@ -171,13 +172,15 @@ private fun crossingDetail(result: CrossingResult): String = when (result) {
 
     is CrossingResult.LostSupplies -> buildString {
         append("The river took ${result.foodPounds} lb of food")
-        if (result.clothingSets > 0) append(" and ${result.clothingSets} sets of clothing")
+        if (result.clothingSets > 0) {
+            append(" and ${counted(result.clothingSets, "set", "sets")} of clothing")
+        }
         append(".")
     }
 
     is CrossingResult.Capsized -> buildString {
         append("You lost ${result.foodPounds} lb of food")
-        if (result.oxenLost > 0) append(" and ${result.oxenLost} ox")
+        if (result.oxenLost > 0) append(" and ${counted(result.oxenLost, "ox", "oxen")}")
         append(".")
         if (result.drowned != null) append(" ${result.drowned} drowned.")
     }

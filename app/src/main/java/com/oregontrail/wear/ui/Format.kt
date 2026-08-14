@@ -70,20 +70,36 @@ val Good.purchaseCeiling: Int
     }
 
 /**
+ * A count and its noun, agreeing in number — "1 ox", "2 oxen", "0 wheels".
+ *
+ * Zero takes the plural, as English does. Only one of these nouns is irregular, hence the
+ * explicit [plural] rather than always appending an "s".
+ */
+fun counted(quantity: Int, singular: String, plural: String = "${singular}s"): String =
+    "$quantity ${if (quantity == 1) singular else plural}"
+
+/**
  * A quantity of [good] in its own internal unit — "3 oxen", "40 lb food", "20 bullets" —
  * as opposed to [shortUnit], which is the *purchase* unit sold at the store (a box of 20
  * bullets, a yoke of 2 oxen). [com.oregontrail.wear.core.Encounters] trades goods
  * directly in the internal unit, so a trade offer needs this instead — labelling 33
  * individual bullets "33 box" would overstate the offer twentyfold.
+ *
+ * A trade offer can be for exactly one of anything — [com.oregontrail.wear.core.Encounters]
+ * rolls its quantities from 1 — and so can a wagon's holding, so every countable noun here
+ * has to inflect. "1 wheels" was showing up on the trader's offer line. Food and clothing
+ * don't inflect: both are phrased as mass nouns ("40 lb food", "3 clothing") that read the
+ * same at any count, and spelling clothing out as "sets of clothing" would overrun the
+ * supplies row on the 384 px watch.
  */
 fun Good.describeQuantity(quantity: Int): String = when (this) {
-    Good.OXEN -> "$quantity oxen"
+    Good.OXEN -> counted(quantity, "ox", "oxen")
     Good.FOOD -> "$quantity lb food"
     Good.CLOTHING -> "$quantity clothing"
-    Good.BULLETS -> "$quantity bullets"
-    Good.SPARE_WHEEL -> "$quantity wheels"
-    Good.SPARE_AXLE -> "$quantity axles"
-    Good.SPARE_TONGUE -> "$quantity tongues"
+    Good.BULLETS -> counted(quantity, "bullet")
+    Good.SPARE_WHEEL -> counted(quantity, "wheel")
+    Good.SPARE_AXLE -> counted(quantity, "axle")
+    Good.SPARE_TONGUE -> counted(quantity, "tongue")
 }
 
 /**
