@@ -232,7 +232,13 @@ fun MenuChip(
             Text(
                 text = label,
                 style = MaterialTheme.typography.button,
-                maxLines = 2,
+                // Three lines, not two. The x3 label fits about 11 characters per line
+                // on the 384-pixel watch — not the ~15 the emulator's wider column
+                // suggests — so the longest route labels at a fork ("Raft down the
+                // Columbia River") need a third line and were silently losing their
+                // tail without one. The chip grows to fit; every other label in the
+                // game is short enough that this changes nothing for it.
+                maxLines = 3,
             )
         },
         onClick = onClick,

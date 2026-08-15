@@ -86,6 +86,51 @@ class ScreenFlowTest {
         assertEquals(Screen.GameOver, demandedScreen(drownedAtTheRiver))
     }
 
+    /**
+     * The travel screen cannot be reached while a decision is outstanding.
+     *
+     * This is the freeze the player actually hit: at a branch, "Check supplies" then
+     * "Back" lands on the trail menu, whose "Continue on" asks for [Screen.Trail] by
+     * name. Granting it strands the wagon on a screen where every day is a no-op — see
+     * [allowedScreen].
+     */
+    @Test
+    fun `asking for the trail while a decision is outstanding routes to the decision`() {
+        val atBranch = TestStates.outfitted().copy(at = LandmarkId.SOUTH_PASS, heading = null)
+        assertEquals(Screen.Fork, allowedScreen(atBranch, Screen.Trail))
+        assertEquals(Screen.Fork, allowedScreen(atBranch, Screen.TrailMenu))
+
+        val atRiver = travelUntilAwaitingDecision(TestStates.outfitted())
+        assertEquals(Screen.River, allowedScreen(atRiver, Screen.Trail))
+        assertEquals(Screen.River, allowedScreen(atRiver, Screen.TrailMenu))
+    }
+
+    /** The same guard must not interfere with a run that is simply under way. */
+    @Test
+    fun `the trail and its menu stay reachable while the wagon can roll`() {
+        val rolling = TestStates.outfitted()
+        assertEquals(Screen.Trail, allowedScreen(rolling, Screen.Trail))
+        assertEquals(Screen.TrailMenu, allowedScreen(rolling, Screen.TrailMenu))
+    }
+
+    /**
+     * Only the two screens that assume a rolling wagon are guarded. Checking supplies or
+     * buying from a fort's store at a branch is legitimate, and must still work.
+     */
+    @Test
+    fun `other screens are reachable with a decision outstanding`() {
+        val atBranch = TestStates.outfitted().copy(at = LandmarkId.SOUTH_PASS, heading = null)
+        assertEquals(Screen.Supplies, allowedScreen(atBranch, Screen.Supplies))
+        assertEquals(Screen.Store, allowedScreen(atBranch, Screen.Store))
+        assertEquals(Screen.Arrival, allowedScreen(atBranch, Screen.Arrival))
+    }
+
+    /** Before a run exists there is no state to consult, and the title screen navigates. */
+    @Test
+    fun `navigation without a run is left alone`() {
+        assertEquals(Screen.Trail, allowedScreen(null, Screen.Trail))
+    }
+
     /** Advances real days until the engine stops and asks for a decision. */
     private fun travelUntilAwaitingDecision(start: GameState): GameState {
         var state = start

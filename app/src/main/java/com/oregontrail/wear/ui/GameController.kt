@@ -11,10 +11,13 @@ import com.oregontrail.wear.core.Encounters
 import com.oregontrail.wear.core.GameEvent
 import com.oregontrail.wear.core.GameState
 import com.oregontrail.wear.core.Good
+import com.oregontrail.wear.core.HighScoreEntry
+import com.oregontrail.wear.core.HighScoreTable
 import com.oregontrail.wear.core.Hunting
 import com.oregontrail.wear.core.HuntOutcome
 import com.oregontrail.wear.core.HuntingGround
 import com.oregontrail.wear.core.LandmarkId
+import com.oregontrail.wear.core.Outcome
 import com.oregontrail.wear.core.Pace
 import com.oregontrail.wear.core.PartyNames
 import com.oregontrail.wear.core.Profession
@@ -25,8 +28,10 @@ import com.oregontrail.wear.core.Rations
 import com.oregontrail.wear.core.Rng
 import com.oregontrail.wear.core.RiverConditions
 import com.oregontrail.wear.core.RiverCrossing
+import com.oregontrail.wear.core.Scoring
 import com.oregontrail.wear.core.Store
 import com.oregontrail.wear.core.TurnEngine
+import com.oregontrail.wear.data.HighScoreRepository
 import com.oregontrail.wear.data.SaveRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +54,7 @@ import kotlinx.coroutines.launch
  */
 class GameController(
     private val repository: SaveRepository,
+    private val scoreboard: HighScoreRepository,
     /**
      * Where saves are written. Injected so the JVM tests can pass a scope they control
      * and await, rather than racing a background write.
@@ -167,6 +173,25 @@ class GameController(
     var pendingEncounter: Encounter? by mutableStateOf(null)
         private set
 
+    /**
+     * The high score table, read once at construction and kept in memory from then on.
+     *
+     * Read eagerly rather than on first use because the title screen asks for it during
+     * composition, and a lazy read would mean writing to Compose state from inside a
+     * getter called while composing. The file is a few hundred bytes, so paying for it up
+     * front costs nothing measurable.
+     */
+    var scores: HighScoreTable by mutableStateOf(scoreboard.load())
+        private set
+
+    /**
+     * Where the run that just finished placed, or null if it did not place — or if the
+     * run on screen is not one this session finished. Held only so the ending and the
+     * table can point at the new row; nothing about the game depends on it.
+     */
+    var lastPlacement: Int? by mutableStateOf(null)
+        private set
+
     private var chosenProfession: Profession? = null
     private var arrivedThisDay = false
 
@@ -195,6 +220,7 @@ class GameController(
 
     fun startNewGame() {
         chosenProfession = null
+        lastPlacement = null
         screen = Screen.ChooseProfession
     }
 
@@ -230,6 +256,10 @@ class GameController(
         pendingEvents = emptyList()
         pendingEncounter = null
         ticker = null
+        // Assigned rather than committed, which is what keeps a finished run from being
+        // scored a second time — see [commit]. The placement is cleared with it, since a
+        // resumed ending is not a placement this session earned.
+        lastPlacement = null
         screen = resumeScreen(loaded)
     }
 
@@ -246,13 +276,36 @@ class GameController(
         crossingResult = null
         crossingMethod = null
         raftOutcome = null
+        lastPlacement = null
         screen = Screen.Title
     }
 
     // ---- Navigation ----
 
+    fun showHighScores() {
+        screen = Screen.HighScores
+    }
+
+    /**
+     * Leaves the table for wherever it was opened from.
+     *
+     * Derived rather than remembered. The table has exactly two ways in — the title
+     * screen and the ending — and those two are told apart by whether a finished run is
+     * loaded, so a one-deep back stack would be a second source of truth for something
+     * already known. A run that is *not* over cannot be showing the table at all, because
+     * nothing on the trail links to it.
+     */
+    fun closeHighScores() {
+        screen = if (state?.isOver == true) Screen.GameOver else Screen.Title
+    }
+
+    /**
+     * Navigates. Every hardcoded destination in the UI comes through here, which is why
+     * the one rule a hardcoded destination can get wrong — see [allowedScreen] — is
+     * enforced here rather than at each tap.
+     */
     fun go(destination: Screen) {
-        screen = destination
+        screen = allowedScreen(state, destination)
     }
 
     /** Leaves the store and takes to the trail. */
@@ -463,6 +516,11 @@ class GameController(
      * priority over [destination] in [com.oregontrail.wear.ui.OregonTrailApp] — an
      * event or encounter left over from whatever the player was doing before opening
      * the debug menu, say.
+     *
+     * Note that jumping to an *arrival* files a high score like any other arrival, since
+     * this goes through [commit]. That is deliberate: it means the debug path exercises
+     * the real scoring hook rather than a bypass of it, at the cost of a debug build's
+     * table filling with jumped-to endings.
      */
     fun debugJumpTo(next: GameState, destination: Screen) {
         commit(next)
@@ -486,8 +544,42 @@ class GameController(
      * channel and [flushSave] for why the guarantee survives the move.
      */
     private fun commit(next: GameState) {
+        val previous = state
         state = next
         saves.trySend(SaveTask.Write(next))
+        if (previous?.isOver != true && next.outcome == Outcome.Arrived) record(next)
+    }
+
+    /**
+     * Files a finished run in the high score table.
+     *
+     * Hung off [commit] because that is the one place a run can *become* finished, which
+     * makes "score it exactly once" structural rather than something four separate
+     * endings — the last event of a day, a river, the rapids, and the day that quietly
+     * kills the last traveller — each have to remember to do. The `previous?.isOver`
+     * guard is what makes it once rather than once-per-mutation, and resuming deliberately
+     * assigns [state] instead of committing it, so re-opening a finished save does not
+     * re-score it.
+     *
+     * Only arrivals are scored. The 1985 rules award points on reaching the Willamette
+     * Valley and nothing at all for dying on the way, which is why the ending shows a
+     * tally on one branch and a tombstone on the other.
+     *
+     * Written to disk synchronously, unlike the run's own saves. This happens once per
+     * journey, on the frame the player is being told they made it — a frame with no
+     * animation to stutter — so the queue that keeps travel smooth would buy nothing here
+     * and would need a second task type to carry it.
+     */
+    private fun record(finished: GameState) {
+        val placement = scores.with(
+            HighScoreEntry(
+                points = Scoring.score(finished).total,
+                profession = finished.profession,
+            )
+        )
+        scores = placement.table
+        lastPlacement = placement.rank
+        scoreboard.save(placement.table)
     }
 
     /** Sorts a day's events into what stops the wagon and what merely scrolls past. */

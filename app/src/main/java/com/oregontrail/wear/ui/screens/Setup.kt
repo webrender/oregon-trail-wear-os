@@ -37,6 +37,8 @@ fun TitleScreen(controller: GameController) {
             primary = !controller.hasSave,
             onClick = { controller.startNewGame() },
         )
+        Gap(6)
+        MenuChip(label = "High Scores", onClick = { controller.showHighScores() })
         if (BuildConfig.DEBUG) {
             Gap(6)
             MenuChip(label = "Debug: jump to...", onClick = { controller.go(Screen.Debug) })

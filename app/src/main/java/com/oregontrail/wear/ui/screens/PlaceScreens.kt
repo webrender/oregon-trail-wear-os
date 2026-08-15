@@ -33,6 +33,7 @@ import com.oregontrail.wear.ui.components.StaticScreen
 import com.oregontrail.wear.ui.counted
 import com.oregontrail.wear.ui.describeQuantity
 import com.oregontrail.wear.ui.money
+import com.oregontrail.wear.ui.ordinal
 import com.oregontrail.wear.ui.short
 import com.oregontrail.wear.ui.theme.AppleII
 import com.oregontrail.wear.ui.theme.AppleIIChrome
@@ -292,6 +293,16 @@ fun GameOverScreen(controller: GameController) {
             )
             ScreenTitle("${score.total} points")
 
+            // Only shown when the run actually placed. A journey that missed the cut is
+            // told so by its absence from the table, which it can go and look at.
+            controller.lastPlacement?.let { place ->
+                ScreenText(
+                    "${ordinal(place)} best journey",
+                    color = AppleII.Green,
+                    small = true,
+                )
+            }
+
             Gap(16)
             MenuChip(
                 label = "New Journey",
@@ -301,6 +312,8 @@ fun GameOverScreen(controller: GameController) {
                     controller.startNewGame()
                 },
             )
+            Gap(6)
+            MenuChip(label = "High Scores", onClick = { controller.showHighScores() })
         }
 
         Outcome.PartyLost, null -> RotaryScrollColumn {
@@ -321,6 +334,10 @@ fun GameOverScreen(controller: GameController) {
                     controller.startNewGame()
                 },
             )
+            Gap(6)
+            // Offered here too, even though a lost party scores nothing. The table is
+            // still the thing that says what a better run would have to beat.
+            MenuChip(label = "High Scores", onClick = { controller.showHighScores() })
         }
     }
 }

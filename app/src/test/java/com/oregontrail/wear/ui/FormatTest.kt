@@ -85,4 +85,22 @@ class FormatTest {
             assertTrue("${good.displayName}: ceiling must be positive", good.purchaseCeiling > 0)
         }
     }
+
+    /** Every place the high score table can actually show. */
+    @Test
+    fun `each place in the high score table reads correctly`() {
+        assertEquals(
+            listOf("1st", "2nd", "3rd", "4th", "5th", "6th", "7th", "8th", "9th", "10th"),
+            (1..10).map { ordinal(it) },
+        )
+    }
+
+    /** The one case a rule written from the last digit alone gets wrong. */
+    @Test
+    fun `the teens all take th`() {
+        assertEquals(listOf("11th", "12th", "13th"), (11..13).map { ordinal(it) })
+        assertEquals("111th", ordinal(111))
+        assertEquals("21st", ordinal(21))
+        assertEquals("102nd", ordinal(102))
+    }
 }

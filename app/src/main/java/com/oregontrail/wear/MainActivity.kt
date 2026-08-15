@@ -3,6 +3,7 @@ package com.oregontrail.wear
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import com.oregontrail.wear.data.HighScoreRepository
 import com.oregontrail.wear.data.SaveRepository
 import com.oregontrail.wear.ui.GameController
 import com.oregontrail.wear.ui.OregonTrailApp
@@ -16,7 +17,12 @@ class MainActivity : ComponentActivity() {
      * Android at all. Everything below [GameController] is plain Kotlin.
      */
     private val controller by lazy {
-        GameController(SaveRepository(File(filesDir, "run.json")))
+        GameController(
+            repository = SaveRepository(File(filesDir, "run.json")),
+            // A file of its own, so that clearing a run — abandoning it, or finishing one
+            // and starting the next — cannot take the high score table with it.
+            scoreboard = HighScoreRepository(File(filesDir, "scores.json")),
+        )
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

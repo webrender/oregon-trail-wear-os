@@ -27,6 +27,8 @@ All captured on the `Wear_OS_Large_Round` emulator (454×454, API 33).
 | Fording safely | Arriving at a fort |
 | ![The hunting minigame](docs/images/hunting.png) | ![Confirming abandonment of a run](docs/images/abandon.png) |
 | Hunting the prairie | Abandoning a run (no undo) |
+| ![Scoring a finished journey](docs/images/score.png) | ![The high score table](docs/images/high-scores.png) |
+| Scoring a finished journey | The ten best journeys |
 
 ## Design
 

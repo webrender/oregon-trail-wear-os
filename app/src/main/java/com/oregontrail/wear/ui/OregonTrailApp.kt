@@ -9,6 +9,7 @@ import com.oregontrail.wear.ui.screens.EncounterScreen
 import com.oregontrail.wear.ui.screens.EventScreen
 import com.oregontrail.wear.ui.screens.ForkScreen
 import com.oregontrail.wear.ui.screens.GameOverScreen
+import com.oregontrail.wear.ui.screens.HighScoresScreen
 import com.oregontrail.wear.ui.screens.HuntingScreen
 import com.oregontrail.wear.ui.screens.MonthScreen
 import com.oregontrail.wear.ui.screens.PaceScreen
@@ -66,6 +67,7 @@ private fun Destination(controller: GameController) {
         Screen.Raft -> RaftScreen(controller)
         Screen.Fork -> ForkScreen(controller)
         Screen.GameOver -> GameOverScreen(controller)
+        Screen.HighScores -> HighScoresScreen(controller)
         Screen.ConfirmAbandon -> ConfirmAbandonScreen(controller)
         Screen.Debug -> DebugScreen(controller)
     }

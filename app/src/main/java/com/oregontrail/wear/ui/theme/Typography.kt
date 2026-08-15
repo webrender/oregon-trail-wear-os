@@ -94,11 +94,12 @@ private fun cellStyle(scale: Int): TextStyle {
  * and are told apart by colour instead — at x1 the cell is 8 pixels tall, which no one
  * is reading on a 1.2" display.
  *
- * These sizes put a hard budget on copy, and it is tighter than it looks: a chip label at
- * x3 fits about 15 characters per line over two lines, and a secondary label at x2 fits
- * about 23 on its one line. Several strings had to be shortened to land inside that,
- * including two route labels in `Trail.kt`. Check new copy against it — the failure mode
- * is a silent ellipsis, not a warning.
+ * These sizes put a hard budget on copy, and it is tighter than it looks: on the
+ * 384-pixel watch a chip label at x3 fits about 11 characters per line over three lines,
+ * and a secondary label at x2 fits about 17 per line over two. Budget against the watch
+ * and not the 454-pixel emulator, whose chip column is a third wider. Several strings had
+ * to be shortened to land inside that, including two route labels in `Trail.kt`. Check
+ * new copy against it — the failure mode is a silent ellipsis, not a warning.
  */
 @Composable
 fun appleIITypography(): Typography = Typography(

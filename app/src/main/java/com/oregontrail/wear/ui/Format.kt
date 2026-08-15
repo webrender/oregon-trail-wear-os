@@ -103,6 +103,27 @@ fun Good.describeQuantity(quantity: Int): String = when (this) {
 }
 
 /**
+ * A place in a ranking — "1st", "2nd", "11th".
+ *
+ * Only ever called with 1..10 today, since that is the height of the high score table,
+ * but the teens are handled anyway: they are the one case a rule written from the last
+ * digit alone gets wrong, and they cost two lines to get right.
+ */
+fun ordinal(place: Int): String {
+    val suffix = if (place % 100 in 11..13) {
+        "th"
+    } else {
+        when (place % 10) {
+            1 -> "st"
+            2 -> "nd"
+            3 -> "rd"
+            else -> "th"
+        }
+    }
+    return "$place$suffix"
+}
+
+/**
  * The date with the month abbreviated and the year dropped.
  *
  * Used on the lines beneath a scene, where the full "September 21, 1848" runs to 18
