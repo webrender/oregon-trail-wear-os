@@ -282,10 +282,11 @@ are in `art-source/` and wired up. Prompts and the reasoning behind each clause 
 | `portrait_riders` | portrait | Riders shadowing the wagon, meaning to take what they can. Also shown on the outcome screen after a fight, so it works as a *threat* rather than a portrait of one person — several mounted figures at distance, faces not readable. |
 | `river_guide` | backdrop | The Snake River crossing with a hired Shoshone guide leading the team through the water. The only new backdrop. |
 
-`portrait_guide` is **not** retired — it moves. It now appears on the Snake River
-crossing screen next to the "Hire a guide" option, at 64dp rather than the encounters'
-96dp, so it should still read at two thirds the size. If the existing file doesn't, this
-is the one to redraw.
+`portrait_guide` is **retired.** It briefly moved to the Snake River crossing screen
+beside the "Hire a guide" option, but a portrait there was doing no work the chip and its
+price were not already doing — the crossing screen is a menu, not a meeting. The file is
+kept but nothing in the game asks for it. The guide is still drawn where he is actually
+doing something: in `river_guide`, the backdrop for the crossing itself.
 
 **The riders are what the note above is about.** They descend from the 1978 text version's
 "riders ahead", where they were Native American and the game asked whether to shoot them.

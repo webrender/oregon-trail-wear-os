@@ -112,14 +112,6 @@ fun RiverScreen(controller: GameController) {
                 small = true,
             )
         }
-        // The guide is the only crossing option attached to a person, and the only one a
-        // player can arrive without the means to take. Showing him makes the offer legible
-        // at a glance, and makes his absence legible too: a party that spent its clothing
-        // sees the river with nobody standing at it.
-        if (CrossingMethod.HIRE_GUIDE in available) {
-            Gap(6)
-            PixelArtImage(name = ArtNames.PORTRAIT_GUIDE, size = 64.dp)
-        }
         Gap(10)
         for (method in available) {
             MenuChip(

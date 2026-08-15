@@ -134,13 +134,6 @@ object ArtNames {
 
     const val PORTRAIT_RIDERS: String = "portrait_riders"
 
-    /**
-     * The guide who will pilot a wagon over the Snake, shown beside the offer on the river
-     * screen rather than as an encounter — see [com.oregontrail.wear.core.CrossingMethod].
-     * The one portrait in the game that belongs to a place instead of to a meeting.
-     */
-    const val PORTRAIT_GUIDE: String = "portrait_guide"
-
     /** The portrait for whoever the party has met on the trail. */
     fun forEncounter(encounter: Encounter): String = when (encounter) {
         is Encounter.Scout -> "portrait_pioneer"
