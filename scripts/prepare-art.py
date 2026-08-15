@@ -78,7 +78,12 @@ MAX_DRAWN_PX = {
     "figure": 120 * MAX_DENSITY,
 }
 
-BACKDROPS = ("lm_", "river_", "terrain_")
+# `map_` tiles are backdrops for the sizing cap, but they also depend on not being
+# cropped: `visible_box` only trims transparency, and the map tiles are fully opaque,
+# so they pass through untouched. That has to stay true — landmark markers are drawn
+# in tile coordinates, and a tile trimmed by even a few pixels would shift every
+# marker on the map.
+BACKDROPS = ("lm_", "river_", "terrain_", "map_")
 # `raft_wreck` is a backdrop whose name begins "raft_" like the minigame's sprites, so it
 # has to be named here or `role` files it as a sprite and caps it at 268px — a backdrop
 # that is then upscaled across a 384px display. (The minigame's channel backdrop needs no
@@ -87,6 +92,21 @@ BACKDROP_NAMES = {
     "store_interior", "title_banner", "wagon_arrival", "hunt_terrain", "raft_wreck",
 }
 FIGURE_NAMES = {"tombstone", "ox_dead"}
+
+# Assets written as an indexed PNG with a small palette rather than full RGB.
+#
+# The map tiles look like flat 16-colour art but arrive with ~124,000 distinct
+# colours: the generator anti-aliases, and the downscale above adds more. PNG
+# compresses that badly, and six tiles cost 5.8MB against 23MB for the whole rest
+# of the game. Quantised they cost 1.2MB, and an A/B at full asset size is
+# indistinguishable — unsurprising for art that was only ever meant to hold about
+# sixteen colours, and which the watch downscales again before drawing.
+#
+# Scoped to a prefix on purpose. The rest of the art is shipped and play-tested,
+# and quietly re-encoding all of it to chase the same saving is a separate
+# decision from getting the map in.
+QUANTIZED = ("map_",)
+QUANTIZE_COLOURS = 32
 
 # The bullet was authored twice: an opaque version on a black field, and a
 # transparent one. Only the transparent one can be composited over terrain.
@@ -139,6 +159,13 @@ def main() -> None:
             width, height = image.size
             size = (max(1, round(width * scale)), max(1, round(height * scale)))
             image = image.resize(size, Image.LANCZOS)
+
+        if name.startswith(QUANTIZED):
+            # After the resize, never before: resampling invents colours, so
+            # quantising first would just have them back again.
+            image = image.convert("RGB").quantize(
+                colors=QUANTIZE_COLOURS, method=Image.MEDIANCUT, dither=Image.NONE
+            )
 
         image.save(DEST / f"{name}.png", optimize=True)
         print(f"{name:24} {authored[0]:5d}x{authored[1]:<5d} -> "

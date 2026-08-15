@@ -224,7 +224,9 @@ object Trail {
             LandmarkId.THE_DALLES, "The Dalles", LandmarkKind.Waypoint,
             listOf(
                 Route(LandmarkId.OREGON_CITY, 200, "Take the Barlow Toll Road"),
-                Route(LandmarkId.COLUMBIA_RIVER, 50, "Raft down the Columbia River"),
+                // "Raft down the Columbia River" is two characters past what three chip
+                // lines hold on the watch, and lost "River" to a silent truncation.
+                Route(LandmarkId.COLUMBIA_RIVER, 50, "Raft the Columbia River"),
             ),
         ),
         Landmark(
@@ -246,4 +248,49 @@ object Trail {
 
     /** Every fort, in trail order — the set of places with a marked-up store. */
     val forts: List<Landmark> get() = landmarks.filter { it.kind is LandmarkKind.Fort }
+
+    /**
+     * A path from Independence to [target], both ends included.
+     *
+     * Used only to reconstruct a journey that was never recorded — see
+     * [GameState.journey]. It takes the *first* route out of each branch rather than the
+     * shortest, since that is the one the table presents as the main road, which means it
+     * can be wrong about a party that took the detour. That is the price of a save written
+     * before the history was kept, and it is paid once.
+     */
+    fun pathTo(target: LandmarkId): List<LandmarkId> {
+        fun walk(from: LandmarkId): List<LandmarkId>? {
+            if (from == target) return listOf(from)
+            for (route in this[from].routes) {
+                val rest = walk(route.to)
+                if (rest != null) return listOf(from) + rest
+            }
+            return null
+        }
+        return walk(LandmarkId.INDEPENDENCE) ?: listOf(target)
+    }
+
+    /**
+     * The shortest distance in miles from [from] to [to], or null if the trail does not
+     * lead there.
+     *
+     * Null is a real answer rather than a failure: routes only ever run westward, so
+     * nothing behind the party is reachable, and neither is the arm of a branch they did
+     * not take. The map says as much rather than quoting a distance nobody will travel.
+     */
+    fun milesBetween(from: LandmarkId, to: LandmarkId): Int? {
+        if (from == to) return 0
+        var best: Int? = null
+        for (route in this[from].routes) {
+            val onward = milesBetween(route.to, to) ?: continue
+            val total = route.miles + onward
+            if (best == null || total < best) best = total
+        }
+        return best
+    }
+
+    /** Miles covered walking [path], which must be a chain of connected landmarks. */
+    fun milesAlong(path: List<LandmarkId>): Int = path.zipWithNext().sumOf { (from, to) ->
+        this[from].routes.firstOrNull { it.to == to }?.miles ?: 0
+    }
 }

@@ -215,6 +215,13 @@ fun TrailMenuScreen(controller: GameController) {
         }
         item {
             MenuChip(
+                label = "Look at the map",
+                secondaryLabel = counted(state.totalMiles, "mile") + " so far",
+                onClick = { controller.go(Screen.Map) },
+            )
+        }
+        item {
+            MenuChip(
                 label = "Go hunting",
                 secondaryLabel = if (controller.canHunt) {
                     controller.huntGround?.displayName

@@ -38,6 +38,12 @@ sealed interface Screen {
     /** The hunting minigame, reached by choice from [TrailMenu] — never demanded. */
     data object Hunt : Screen
 
+    /**
+     * The trail map. Somewhere the player goes and looks, not a replacement for [Trail] —
+     * see docs/adr/0006-map-screen.md.
+     */
+    data object Map : Screen
+
     data object ChoosePace : Screen
 
     data object ChooseRations : Screen

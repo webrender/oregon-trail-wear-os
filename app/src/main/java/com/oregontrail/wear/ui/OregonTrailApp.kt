@@ -11,6 +11,7 @@ import com.oregontrail.wear.ui.screens.ForkScreen
 import com.oregontrail.wear.ui.screens.GameOverScreen
 import com.oregontrail.wear.ui.screens.HighScoresScreen
 import com.oregontrail.wear.ui.screens.HuntingScreen
+import com.oregontrail.wear.ui.screens.MapScreen
 import com.oregontrail.wear.ui.screens.MonthScreen
 import com.oregontrail.wear.ui.screens.PaceScreen
 import com.oregontrail.wear.ui.screens.ProfessionScreen
@@ -60,6 +61,7 @@ private fun Destination(controller: GameController) {
         Screen.TrailMenu -> TrailMenuScreen(controller)
         Screen.Supplies -> SuppliesScreen(controller)
         Screen.Hunt -> HuntingScreen(controller)
+        Screen.Map -> MapScreen(controller)
         Screen.ChoosePace -> PaceScreen(controller)
         Screen.ChooseRations -> RationsScreen(controller)
         Screen.Arrival -> ArrivalScreen(controller)

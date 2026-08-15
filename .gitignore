@@ -22,3 +22,6 @@ screenshots/
 # back the masters up somewhere, or a future layout that wants a bigger draw size will
 # have nothing to regenerate from.
 art-source/
+
+# Python bytecode from the art scripts.
+__pycache__/

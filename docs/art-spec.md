@@ -1,278 +1,170 @@
-# Art spec: generation prompts for the rafting minigame
+# Art spec: generation prompts for the trail map
 
-Prompts for the nine P3 assets in [art-brief.md](art-brief.md) — the Columbia rafting
-sequence. The brief is the contract (filenames, footprints, why each asset exists); this
-file is just how to make them.
+Three prompts, for three 2:1 images. `scripts/split-map.py` joins them into one long
+strip and cuts it into the six tiles the map screen scrolls through.
+
+## Why three and not six
+
+Six separately generated tiles never line up — five seams, all of them wrong. One giant
+image lines up perfectly but is painful to generate. Three 2:1 images split the
+difference: cutting each in half gives six tiles, and three of the five seams fall
+*inside* a source image and are therefore exact. Only two are joins between separate
+generations, and both of those are placed where the composition hides them.
 
 ## How to use this
 
-1. Paste the **style preamble** below, then the asset's prompt.
-2. Set the **canvas ratio** given for that asset.
-3. Save as `<filename>.png` into `art-source/`, then run `python3 scripts/prepare-art.py`.
-
-**Two ratios are listed per asset and they do different jobs.** *Canvas ratio* is what you
-ask the generator for. *Subject proportion* is the shape the drawn thing itself should
-have — and that is the one that matters, because `prepare-art.py` crops every sprite to
-its visible pixels, throwing the canvas away. The app then fits the cropped subject inside
-a footprint of fixed proportions, so a subject drawn a different shape from its footprint
-lands on screen smaller than intended, with dead space either side that the raft and the
-rocks still collide in. Square canvases are fine for almost everything; just get the
-*subject's* proportions right.
-
-**The proportions here are what the shipped art turned out to be, not what was asked for
-first time.** The generator drew all eight of these taller and narrower than the original
-spec, and the footprints in `RaftScreen.kt` were re-measured to match rather than the art
-being squeezed to fit them. If you regenerate one and it comes back a different shape
-again, do the same thing: change the footprint, and update both this file and the
-[art-brief](art-brief.md) table.
-
-Backdrops are the exception — they are not cropped, and their canvas ratio is the real
-constraint.
-
-## Style preamble
-
-Paste this in front of every prompt:
+Add this sentence to your standard preamble, so it applies to all three:
 
 ```
-Retro video-game illustration in the spirit of a 1985 Apple II hi-res game — bold,
-blocky, and flat, but rendered cleanly rather than as a literal low-resolution bitmap.
-Heavy black outlines wherever a shape meets its background. A small, saturated palette:
-a handful of flat bright colours, black outlines, white highlights, no gradients, no
-texture noise, no painterly shading. Orange stands in for brown — timber, earth and hide
-are all orange. Green for vegetation, blue for water, white for foam and canvas. Large
-flat areas stay flat; fine detail reads as noise at watch size. No text, no lettering,
-no numbers, no watermark, no UI elements, no border or frame.
+A map of the American West seen from directly above, with mountains and trees drawn
+as side-on symbols. No trails, roads, paths or writing.
 ```
 
-## The overhead rule
-
-Eight of these nine are seen **from directly above**, looking down at the water, with the
-current running from the top of the image to the bottom. This is the only screen in the
-game drawn that way — everything else is side-on — so it is worth stating in the prompt
-every time, or the generator will quietly give you a boat seen from the shore.
-
-`raft_wreck` is the exception: it is a normal side-on scene.
-
----
-
-## `river_bank` — the channel
-
-**Canvas 1:1.** The width is the exact fit — this backdrop is scaled to the display's
-width and never cropped sideways, because the code puts the banks at fixed positions
-regardless of what the art shows. The height is free, except that it may not be *shorter*
-than the width, which a unit test enforces: the river scrolls, and one tile has to cover a
-full screen or the same stretch of bank appears twice at once. Square is the safe answer.
-
-**Water occupies the central 70% of the width** — scene units 19 to 109 of 128 — with
-banks filling the outer 15% on each side, running the full height.
-
-> **Delivered 2026-08-14 and measured at 74.6%**: water from 14–19 on the left to 109–116
-> on the right, with the banks deliberately ragged. `RaftScreen`'s `CHANNEL_LEFT` and
-> `CHANNEL_RIGHT` are set to the *innermost* of those, 19 and 109, so that nowhere in the
-> art does rock reach past them. Because the backdrop scrolls, every row of it passes the
-> raft in turn — an average would put the raft on the rocks a third of the time. If you
-> regenerate this, keep the rock clear of 19–109 everywhere, or re-measure and update the
-> constants.
-
-**It scrolls, and the way it does shapes the art.** The strip is built by alternating this
-image with a vertically flipped copy of itself, which is what lets it run forever without
-being drawn to tile: the flipped copy's first row *is* the original's last row, so the
-join is exact by construction, in both directions. The consequences:
-
-- **Distinctive features on the banks are wanted now**, not forbidden. Boulders,
-  driftwood stacks, grass — they travel with the water, and they are what makes the
-  current legible.
-- **Nothing with an up and a down.** Every other tile is upside down, so a beached canoe,
-  a standing figure or a tree seen in profile will spend half the descent inverted.
-  Gravel, rock and scrub read the same either way; that is why they suit this.
+Then paste one prompt below it. **Canvas 2:1** for all three. Save them anywhere and run:
 
 ```
-Top-down aerial view of a wide river channel running vertically from the top of the frame
-to the bottom, filling the middle 70% of the image with flat bright blue water. Solid
-rocky banks run down the left and right edges, each about 15% of the image width — dark
-grey rock shelf and orange-brown gravel with a hard black edge where they meet the water,
-scattered with pale boulders, stacked driftwood and tufts of green scrub. The water
-surface is calm and near-empty: a few sparse white foam streaks, nothing else. No boats,
-no rocks in the channel, no people, nothing that has an obvious top and bottom.
-```
-
-- **Keep the water quiet.** Every rock, sign and foam speck is drawn on top of this. A
-  busy river bottom hides a boulder until it is too late to steer.
-- **The banks must read as solid.** Hitting one is the most expensive mistake in the
-  minigame; a gently shelving sandy beach would be a lie about that.
-
-## `raft_1` — the raft
-
-**Canvas 1:1. Subject proportion ~4:5, slightly taller than wide.** Transparent background.
-
-```
-Top-down aerial view of a pioneer river raft: a platform of lashed timber logs with a
-covered wagon box strapped to the middle, white canvas cover facing up, and a yoke of oxen
-standing at the front. Two figures with steering poles at the outer corners. The raft is
-pointing down the frame — the bow is at the bottom edge of the image, the stern at the
-top. Seen from straight above, no horizon, no water. Slightly taller than it is wide.
-Transparent background.
-```
-
-- **Bow down.** The raft travels toward the bottom of the screen. A raft drawn bow-up runs
-  the whole descent backwards.
-- **The wagon has to be visible from above** — it is the thing that tells the player this
-  is *their* wagon on that raft, and the white canvas is the only thing that reads at
-  22 scene units across.
-
-## `raft_2` — the raft, bobbing
-
-**Canvas 1:1. Subject proportion ~4:5.** Transparent background.
-
-Generate this as an *edit or variation of* `raft_1`, not from scratch — it is frame two of
-a two-frame cycle running at 5fps, and two independently generated rafts will jitter
-between different boats rather than read as one raft bobbing.
-
-```
-The same top-down raft, identical in size, outline and position, riding slightly lower and
-tilted a few degrees. The logs and wagon shift together as one; the white water breaking
-around the raft's edges changes shape. Everything else is unchanged. Transparent
-background.
-```
-
-- **The silhouette must stay put.** Same rule as the wagon walk cycle: move the load and
-  the wake, not the outline, or it judders instead of bobbing.
-
-## `rock_small` — a midstream boulder
-
-**Canvas 1:1. Subject proportion ~14:15, near square.** Transparent background.
-
-```
-Top-down aerial view of a single grey boulder breaking the surface of a river, seen from
-straight above. Flat grey rock with a hard black outline and one white highlight on the
-upstream face. A collar of white broken water foams around its base, heaviest at the top
-edge where the current hits it. Nothing else in frame. Transparent background.
-```
-
-- **The white water is the tell.** Without foam at its base the rock reads as floating
-  debris rather than something fixed in the current.
-- **Spray is not rock, and the game knows the difference.** The foam is free to spread as
-  far as it likes — `RockSize`'s `sprayInset` values in `RaftScreen.kt` are measured from
-  the art and keep collisions to the boulder inside it. What that inset can't fix is a
-  boulder drawn small in a large cloud: it lands on screen the size of the cloud and hits
-  like the pebble in the middle. Keep the rock itself the bulk of the frame.
-
-## `rock_large` — a bigger boulder
-
-**Canvas 1:1. Subject proportion ~5:6.** Transparent background.
-
-```
-Top-down aerial view of a large grey boulder in a river, seen from straight above,
-drawn in exactly the same style as the smaller boulder: flat grey rock, hard black
-outline, white highlight upstream, a heavy collar of white broken water around its base.
-Broader and blunter than the small one, with a second smaller rock shoulder fused to one
-side. Transparent background.
-```
-
-- **It must read as the same *kind* of thing as `rock_small` at a glance.** The player has
-  about half a second to judge which one is coming and how far to move; two rocks in
-  different visual languages make that a guess.
-
-## `raft_foam` — a speck of water
-
-**Canvas 1:1. Subject proportion ~7:2, much wider than tall.** Transparent background.
-
-Drawn eight at a time, scrolling, to sell a current that the static backdrop cannot.
-
-```
-A single small crest of white river foam seen from directly above: two or three flat white
-horizontal dashes of slightly different lengths, with a hint of pale blue between them.
-Almost abstract — a mark, not an object. Heavy black outline is NOT wanted here. Wider
-than it is tall. Transparent background.
-```
-
-- **This is the one asset with no black outline.** Foam sits on water of nearly its own
-  brightness; an outline turns eight of these into eight distracting blobs.
-
-## `raft_sign` — a direction sign on the bank
-
-**Canvas 1:1. Subject proportion ~3:5, tall and narrow.** Transparent background.
-
-Three of these pass on the way down, and the third means *land now* — the original's only
-pacing device, and ours.
-
-```
-A wooden direction sign staked on a riverbank, seen from above at a slight angle so the
-board is readable as a board rather than as an edge-on line. Orange timber post, a plain
-white plank nailed across it bearing a single simple black arrow glyph pointing to the
-left. No words, no letters. Small patch of orange-brown gravel at the foot of the post.
-Transparent background.
-```
-
-- **The arrow points left**, toward the bank the landing is on. It is a hint, not
-  decoration.
-- **No readable text.** The game's own font does the talking, and generated lettering at
-  ten scene units is mush.
-
-## `raft_landing` — the way out
-
-**Canvas 1:1. Subject proportion ~4:5.** Transparent background.
-
-The target the player has to steer into. When this appears the descent is nearly over.
-
-```
-Top-down aerial view of a river landing place: a small pale gravel beach at the water's
-edge with a pale worn footpath zigzagging up and away from it through green scrub, seen
-from straight above. The path is a bold light switchback — three or four clear zigzags —
-against darker green. Bright, obvious, welcoming. Transparent background.
-```
-
-- **Make it the most obvious thing on the screen.** It appears once, has about three
-  seconds on screen, and missing it costs the player two days. It should read instantly
-  at a glance, from the far side of the channel.
-- The beach edge goes at the **right-hand side** of the image — the landing sits against
-  the left bank, so its water edge faces right, into the channel. That edge is what the
-  code positions the whole landing by (`LANDING_EDGE`), pinning it just past the water
-  line so the landing reads as a break in the cliff rather than an island: gravel hard
-  against the right edge of the file, scrub filling the rest, nothing floating free.
-- **Keep the left third expendable.** The bank it sits on is at the edge of a round
-  display, so the far side of the landing is under the bezel when it matters. Anything the
-  player has to see — the beach, the mouth of the path — belongs on the right.
-
-## `raft_wreck` — the disaster
-
-**Canvas 16:9 backdrop** (match the other backdrops — `river_capsize` is 820x461). Not
-transparent. Keep the outer ~10% on every side clear of anything that must survive the
-round display's crop.
-
-This is the counterpart to `river_capsize` and it should land just as hard.
-
-```
-A pioneer log raft breaking apart on rocks in a fast river, seen from the bank at water
-level. Lashings burst, orange timber logs pitching up at broken angles, the white canvas
-wagon cover half-submerged and washing downstream. Grey boulders and heavy white
-whitewater. Steep dark canyon walls behind, a strip of pale sky above. Bleak. No people
-visible in the water.
-```
-
-- **No visible drowning figures.** The game names the dead in text, on the same screen,
-  which is heavier than any picture of it — and one is a real risk of being tasteless
-  where the other is not.
-
----
-
-## Checking the results
-
-```
+python3 scripts/split-map.py west.png middle.png east.png
 python3 scripts/prepare-art.py
-cmd.exe /c "scripts\win-build.bat testDebugUnitTest --console=plain"
 ```
 
-`ArtNamesTest` fails if any of the nine filenames is missing, and separately if
-`river_bank` is wider than it is tall. Everything else is a matter of looking at it — build,
-install, and take the debug menu's **The Columbia River** entry, which drops straight into
-the minigame.
+The slicer writes `map_1.png` … `map_6.png` into `art-source/`, left to right. Order
+matters: the images go **west first**, because each one is drawn in standard map
+orientation with west on its own left — ocean on the left of the west image, mountains on
+the left of the east image. So the finished strip runs Pacific to Missouri, and the party
+travels right to left across it as the run progresses.
 
-**All nine are now the real thing.** The flat-colour placeholders they replaced — grey
-ellipses for rocks, an orange rectangle for the raft — are gone, and nothing in the code
-ever depended on what they looked like, only on the proportions above.
+The images are joined with a **hard cut**, not a blend. Crossfading was tried and
+measured against the real art and it lost: Apple II styling is flat colour with hard black
+outlines and dense repeating symbols, so alpha-blending two such fields makes
+semi-transparent phantom peaks rather than a gradient — clearly visible at watch scale at
+8% overlap, worse at 20%. Butted together, two dense forests just read as more forest.
+The upshot for the art is that shared edges need only be the *same kind* of terrain, not
+aligned, and nothing near an edge is lost.
 
-The trap that mattered while they were placeholders is worth knowing if you ever author a
-tenth: `prepare-art.py` deletes the assets directory and rebuilds it from `art-source/`,
-so anything with no file in `art-source/` disappears on the next run and `ArtNamesTest`
-goes red. Add the source file before you add the name.
+## Size
+
+Each tile is capped at **821px on its long edge** (`DISPLAY_PX` 480 × 1.14 backdrop
+coverage × 1.5 headroom, in `prepare-art.py`).
+
+| Each source | Tile after slicing | Verdict |
+|---|---|---|
+| 3072 × 1536 | 1453 × 1536 → capped to 776 × 820 | Ideal |
+| 2048 × 1024 | 969 × 1024 → capped to 776 × 820 | Comfortable, recommended |
+| 1664 × 832 | 787 × 832 → capped to 776 × 820 | Exactly enough |
+| 1024 × 512 | 484 × 512 | Too soft, visibly blurry on the watch |
+
+Anything at or above 1664 × 832 hits the cap, so past about 2048 wide the extra pixels
+are discarded. Three modest images are the point of this approach — there is no reason to
+fight the generator for a huge one.
+
+---
+
+## 1. East — prairie and plains
+
+> The Great Plains. Right to left: prairie, flat grassland, dry brown plains. Two narrow rivers
+> run from top to bottom across the prairie on the right. A wider shallow river winds left
+> to right through the dry plains. A lone rock spire near the middle. An unbroken wall of
+> mountains covers the whole left edge, top to bottom.
+
+## 2. Middle — the Rockies and the desert
+
+> The Rocky Mountains and the desert west of them. Mountains fill the right edge, top to
+> bottom, parting in the middle at a wide sagebrush gap with a river running top to bottom
+> through it. West of the mountains, bare brown rocky desert, with a second river running top to
+> bottom in a deep canyon. Forested mountains fill the left edge, top to bottom.
+
+## 3. West — the mountains and the Pacific
+
+> The Pacific Northwest. Forested mountains fill the right edge, top to bottom. A lone
+> snow-capped volcano near the middle. A wide river runs left to right into an estuary,
+> with a green valley below it and forested green hills above it. A narrow strip of ocean
+> along the far left edge.
+
+---
+
+## What the prompts are doing
+
+Worth knowing before editing them, because most of what looks like it could be cut
+already has been.
+
+**Mountains fill both shared edges, top to bottom.** This is the load-bearing
+instruction and the reason those clauses are so specific. The joins are placed on the
+Continental Divide and the Cascades, real barriers where the country changes character,
+so the terrain either side is *supposed* to differ. Mountains running the full height of
+the frame put busy vertical structure exactly where continuity fails, and give the eye
+nothing horizontal to follow across the join.
+
+It also keeps rivers off the seams, without having to ask for that directly. A river
+arriving at 40% of the height on one side of a join and 55% on the other announces it
+instantly — it is the only feature the eye tracks *across* a join, where terrain and
+vegetation differ unnoticed. But "no river touches the left edge" is a negative
+instruction, the weakest thing you can give an image generator and very likely to produce
+one. An edge already full of mountains has no room for a river.
+
+**Rivers run top-to-bottom if the trail crosses them, left-to-right if it follows them.**
+This is the instruction most likely to be lost in editing, and the first version of this
+spec lost it. The party *crosses* the Kansas, Big Blue, Green and Snake — each one is a
+`LandmarkKind.River` in `Trail.kt` with a ford/caulk/ferry decision — and a river you
+cross runs perpendicular to your travel, which on this strip is top to bottom. The party
+*follows* the Platte, and rafts down the Columbia; those run parallel to travel, so left
+to right. Getting this backwards puts a river-crossing marker on dry grass, which is the
+map contradicting the game. Two vertical rivers in the east prairie, two vertical in the
+middle image, one horizontal in each of east and west.
+
+**"Brown" on every patch of dry ground.** This is the one place the prompts overrule the
+generator's palette choices, and it is worth the two words. Left to itself it renders dry
+plains and desert as *white* — measured at 26% and 27% near-white across the east and
+middle images, against 0.0% in the existing `art-source/terrain_desert.png`. That
+contradicts the house rule in [art-brief.md](art-brief.md): orange stands in for brown and
+is what earth is made of, while white is for canvas, snow and bone. It also has a specific
+cost — white ground abutting white snow-capped peaks merges, and a trail that reads as
+snowbound undercuts a game whose whole tension is beating the winter.
+
+**Every region needs something positive in it.** An early middle-image prompt left the
+Pacific Northwest's northern half unspecified and the generator filled it with desert
+borrowed from the neighbouring image. Empty space does not stay empty; name what belongs
+there, hence "forested green hills above it".
+
+**No volcanoes outside the west image.** "Volcanic desert" in an early draft of the middle
+prompt produced a field of eight cinder cones — a repeated symbol meaning nothing, busy at
+watch size, and competing with the one landmark that has to be unmistakable. The lone
+snow-capped cone in the west image is Mount Hood and should be the only one on the map.
+
+**Landscape only.** The app draws the trail, the landmark markers and every name over the
+top as live graphics, which is what lets the art be re-sliced, re-overlapped or
+repositioned without invalidating a single landmark coordinate. A generator asked for a
+map of this region will draw a dotted route across it unless told not to, hence the
+`No trails, roads, paths or writing` in the preamble.
+
+**Few and large.** Each tile is drawn about 360px wide on the watch, so anything smaller
+than about a fortieth of the image height disappears. This is not in the prompts — the
+Apple II styling covers it — but it is the first thing to check on delivery, because busy
+composition is the one flaw that cannot be fixed in post.
+
+## Keep them short
+
+These are 45–65 words each. Two earlier versions ran to 180 and then 115, and the
+generator blended and dropped instructions at both lengths. Styling, palette and aspect
+ratio all live in the preamble, so a prompt should be nothing but what makes this image
+different from the other two. If one needs fixing, swap a sentence rather than add one.
+
+They grew from 35–45 words when the river orientations went in, and that is the right
+trade: a shorter prompt that produces a map contradicting the game is not the cheaper
+option. Length is worth spending on what the game needs to be true, and worth cutting
+everywhere else.
+
+## Notes for the code side
+
+The finished strip is about 5.7:1, against real geography of roughly 2.9:1 — so the map
+is stretched about twice as wide as the ground is. The landmark coordinate table
+therefore has to **compress the trail's north-south wander by about half**, or the route
+will not fit inside its own map: Independence in the south-east and Fort Walla Walla in
+the north-west are nearly 500 miles apart north-south, which is more than a 5.7:1 strip
+can hold at true proportions. Drawing the route straighter than it was is the strip-map
+convention and is what emigrant guidebooks did.
+
+`prepare-art.py` files `map_` as a backdrop, so tiles are capped at 821px and not scaled
+to a sprite footprint. They are also written as RGB rather than RGBA, which makes
+`visible_box` return None and guarantees they pass through uncropped — landmark markers
+are drawn in tile coordinates, and a tile trimmed by even a few pixels would shift every
+marker on the map.

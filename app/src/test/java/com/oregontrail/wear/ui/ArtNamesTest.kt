@@ -74,6 +74,14 @@ class ArtNamesTest {
     }
 
     @Test
+    fun `the map has all six tiles and a marker for the party`() {
+        for (tile in ArtNames.mapTiles) {
+            assertArtExists(tile, "map tile")
+        }
+        assertArtExists(ArtNames.MAP_WAGON, "the party's marker on the map")
+    }
+
+    @Test
     fun `the store interior exists`() {
         assertArtExists(ArtNames.STORE_INTERIOR, "store interior")
     }

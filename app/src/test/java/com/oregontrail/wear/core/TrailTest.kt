@@ -96,6 +96,55 @@ class TrailTest {
         assertEquals(listOf(25, 50, 75, 100, 125, 150), markups)
     }
 
+    @Test
+    fun `pathTo walks from Independence to the landmark asked for`() {
+        for (id in LandmarkId.entries) {
+            val path = Trail.pathTo(id)
+            assertEquals("path to $id starts in the wrong place", LandmarkId.INDEPENDENCE, path.first())
+            assertEquals("path to $id ends in the wrong place", id, path.last())
+            for ((from, to) in path.zipWithNext()) {
+                assertNotNull(
+                    "path to $id steps from $from to $to, which is not a route",
+                    Trail[from].routes.firstOrNull { it.to == to },
+                )
+            }
+        }
+    }
+
+    /**
+     * The reconstruction takes the first route out of a branch, which is the one the table
+     * presents as the main road. Fort Bridger is the second, so reaching it is the case
+     * where the guess has to give way to the recorded history — see [GameState.journey].
+     */
+    @Test
+    fun `pathTo takes the first arm of a branch, and still reaches the second`() {
+        assertTrue(LandmarkId.FORT_BRIDGER !in Trail.pathTo(LandmarkId.SODA_SPRINGS))
+        assertTrue(LandmarkId.GREEN_RIVER in Trail.pathTo(LandmarkId.SODA_SPRINGS))
+        assertEquals(LandmarkId.FORT_BRIDGER, Trail.pathTo(LandmarkId.FORT_BRIDGER).last())
+    }
+
+    @Test
+    fun `milesBetween measures forward along the trail and nowhere else`() {
+        assertEquals(0, Trail.milesBetween(LandmarkId.FORT_HALL, LandmarkId.FORT_HALL))
+        assertEquals(
+            102,
+            Trail.milesBetween(LandmarkId.INDEPENDENCE, LandmarkId.KANSAS_RIVER),
+        )
+        // The shortest of the two ways round, not the first.
+        assertEquals(
+            201,
+            Trail.milesBetween(LandmarkId.SOUTH_PASS, LandmarkId.SODA_SPRINGS),
+        )
+        // Backwards is not a distance, and neither is the arm of a branch not taken.
+        assertEquals(null, Trail.milesBetween(LandmarkId.FORT_HALL, LandmarkId.SOUTH_PASS))
+        assertEquals(null, Trail.milesBetween(LandmarkId.GREEN_RIVER, LandmarkId.FORT_BRIDGER))
+    }
+
+    @Test
+    fun `milesAlong agrees with the sourced total for the whole trail`() {
+        assertEquals(1971, Trail.milesAlong(Trail.pathTo(LandmarkId.OREGON_CITY)))
+    }
+
     private fun milesAlong(from: LandmarkId, path: List<LandmarkId>): Int {
         var current = from
         var total = 0

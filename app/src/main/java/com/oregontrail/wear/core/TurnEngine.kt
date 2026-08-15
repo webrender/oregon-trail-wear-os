@@ -330,6 +330,10 @@ object TurnEngine {
 
         return state.copy(
             at = destination.id,
+            // Appended to `journey` rather than to `visited`, so a save that predates the
+            // history gets the reconstruction written down here instead of starting a new
+            // one from wherever it happened to be — see [GameState.journey].
+            visited = state.journey + destination.id,
             heading = nextHeading,
             milesIntoSegment = 0,
             totalMiles = state.totalMiles + actual,

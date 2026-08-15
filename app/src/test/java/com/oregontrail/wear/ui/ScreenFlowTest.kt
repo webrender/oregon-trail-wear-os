@@ -125,6 +125,24 @@ class ScreenFlowTest {
         assertEquals(Screen.Arrival, allowedScreen(atBranch, Screen.Arrival))
     }
 
+    /**
+     * The map is somewhere the player chooses to go, never somewhere they are sent.
+     *
+     * It is only linked from the trail menu, which is itself unreachable while a decision
+     * is outstanding — so the map inherits that guard rather than needing its own, and the
+     * way back out of it goes through [allowedScreen] like every other tap.
+     */
+    @Test
+    fun `the map is reachable but never demanded`() {
+        val rolling = TestStates.outfitted()
+        assertEquals(Screen.Map, allowedScreen(rolling, Screen.Map))
+        assertNull(demandedScreen(rolling))
+
+        val atBranch = rolling.copy(at = LandmarkId.SOUTH_PASS, heading = null)
+        assertEquals(Screen.Fork, demandedScreen(atBranch))
+        assertEquals(Screen.Fork, allowedScreen(atBranch, Screen.TrailMenu))
+    }
+
     /** Before a run exists there is no state to consult, and the title screen navigates. */
     @Test
     fun `navigation without a run is left alone`() {

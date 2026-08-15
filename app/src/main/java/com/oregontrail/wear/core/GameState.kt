@@ -37,6 +37,15 @@ data class GameState(
     val milesIntoSegment: Int,
     val totalMiles: Int,
 
+    /**
+     * Every landmark reached, in the order they were reached. Read [journey] instead.
+     *
+     * Defaulted because it was added after the game shipped, and a serialised field
+     * without a default fails every save written before it existed — see
+     * [com.oregontrail.wear.data.SaveGame].
+     */
+    val visited: List<LandmarkId> = emptyList(),
+
     val startMonth: Int,
     val dayOfJourney: Int,
 
@@ -50,6 +59,22 @@ data class GameState(
     val date: TrailDate get() = TrailDate.of(startMonth, dayOfJourney)
 
     val currentLandmark: Landmark get() = Trail[at]
+
+    /**
+     * The road actually travelled, from Independence to [at].
+     *
+     * Cannot be derived from [at] alone, which is the whole reason [visited] is recorded:
+     * the trail branches at South Pass, the Blue Mountains and The Dalles, so standing at
+     * Soda Springs is equally consistent with having come by the Green River or by Fort
+     * Bridger, and the map has to draw the one that happened.
+     *
+     * A [visited] that does not end at [at] is a save from before it was recorded, and is
+     * reconstructed from the table instead. [TurnEngine] writes the reconstruction back on
+     * the next arrival, so the guess it contains is made once rather than every time the
+     * map is opened.
+     */
+    val journey: List<LandmarkId>
+        get() = if (visited.lastOrNull() == at) visited else Trail.pathTo(at)
 
     val headingLandmark: Landmark? get() = heading?.let { Trail[it] }
 
@@ -109,6 +134,7 @@ data class GameState(
                 heading = Trail.start.routes.first().to,
                 milesIntoSegment = 0,
                 totalMiles = 0,
+                visited = listOf(LandmarkId.INDEPENDENCE),
                 startMonth = startMonth,
                 dayOfJourney = 0,
                 pace = Pace.STEADY,

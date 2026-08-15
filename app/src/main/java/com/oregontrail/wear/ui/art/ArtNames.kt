@@ -81,6 +81,20 @@ object ArtNames {
     /** A roadside grave or signpost, shown in passing every so often on the trail. */
     const val TRAIL_MARKER: String = "trail_marker"
 
+    /**
+     * The trail map, as six square tiles butted edge to edge.
+     *
+     * Ordered west to east, as the art is drawn: `map_1` is the Pacific and `map_6` is
+     * Independence. That is the *reverse* of journey order, so the party travels right to
+     * left across the finished strip. Mirroring the art to make travel read left-to-right
+     * was rejected — it would put the Pacific on the right — see
+     * docs/adr/0006-map-screen.md.
+     */
+    val mapTiles: List<String> = List(6) { "map_${it + 1}" }
+
+    /** The party's own marker on the map, small enough that the chip icon serves. */
+    const val MAP_WAGON: String = "icon_wagon"
+
     /** Shelves and a counter, behind the goods list at the store. */
     const val STORE_INTERIOR: String = "store_interior"
 

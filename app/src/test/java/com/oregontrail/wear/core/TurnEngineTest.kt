@@ -292,6 +292,76 @@ class TurnEngineTest {
         assertTrue("someone should have made it", s.party.survivorCount > 0)
     }
 
+    // ---- The road travelled ----
+
+    @Test
+    fun `arriving somewhere records it, in the order it was reached`() {
+        val start = TestStates.outfitted()
+        assertEquals(listOf(LandmarkId.INDEPENDENCE), start.journey)
+
+        val atTheKansas = travelTo(start, LandmarkId.KANSAS_RIVER)
+        assertEquals(
+            listOf(LandmarkId.INDEPENDENCE, LandmarkId.KANSAS_RIVER),
+            atTheKansas.journey,
+        )
+    }
+
+    /**
+     * The reason the history is kept at all.
+     *
+     * Both arms of the South Pass branch end at Soda Springs, so `at` alone cannot say
+     * which way the party came — and the map draws the road they actually walked.
+     */
+    @Test
+    fun `the journey remembers which arm of a branch was taken`() {
+        val atSouthPass = TestStates.outfitted().copy(
+            at = LandmarkId.SOUTH_PASS,
+            heading = null,
+            visited = Trail.pathTo(LandmarkId.SOUTH_PASS),
+        )
+        val viaBridger = travelTo(
+            TurnEngine.chooseRoute(atSouthPass, LandmarkId.FORT_BRIDGER),
+            LandmarkId.SODA_SPRINGS,
+        )
+
+        assertTrue(LandmarkId.FORT_BRIDGER in viaBridger.journey)
+        assertTrue(LandmarkId.GREEN_RIVER !in viaBridger.journey)
+        assertEquals(LandmarkId.SODA_SPRINGS, viaBridger.journey.last())
+    }
+
+    /**
+     * A save written before the history existed loads with none of it, and has to be given
+     * a plausible one rather than an empty map. The reconstruction is written down on the
+     * next arrival, so the guess it contains is made once — see [GameState.journey].
+     */
+    @Test
+    fun `a run with no recorded history reconstructs one, and then keeps it`() {
+        val legacy = TestStates.outfitted().copy(
+            at = LandmarkId.FORT_KEARNEY,
+            heading = LandmarkId.CHIMNEY_ROCK,
+            visited = emptyList(),
+        )
+        assertEquals(Trail.pathTo(LandmarkId.FORT_KEARNEY), legacy.journey)
+
+        val arrived = travelTo(legacy, LandmarkId.CHIMNEY_ROCK)
+        assertEquals(
+            Trail.pathTo(LandmarkId.FORT_KEARNEY) + LandmarkId.CHIMNEY_ROCK,
+            arrived.visited,
+        )
+    }
+
+    /** Advances real days until the party stands at [target]. */
+    private fun travelTo(start: GameState, target: LandmarkId): GameState {
+        var state = start
+        repeat(400) {
+            if (state.at == target) return state
+            if (state.isOver) error("the run ended before reaching $target")
+            if (state.awaitingDecision) error("stopped for a decision before reaching $target")
+            state = TurnEngine.advanceDay(state).state
+        }
+        error("never reached $target")
+    }
+
     /**
      * Tops the wagon back up at a fort: enough oxen to pull it, and food for the road
      * ahead. Spends at most half the remaining cash on food so there is something left
