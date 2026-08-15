@@ -19,7 +19,7 @@ import com.oregontrail.wear.ui.theme.AppleIIChrome
 
 @Composable
 fun TitleScreen(controller: GameController) {
-    SceneScrollColumn(background = "title_banner") {
+    SceneScrollColumn(background = "title_banner", twinkle = true) {
         Gap(4)
         ScreenTitle("THE OREGON TRAIL")
         Gap(12)

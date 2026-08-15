@@ -177,6 +177,7 @@ fun RotaryScrollColumn(
 fun SceneScrollColumn(
     background: String?,
     modifier: Modifier = Modifier,
+    twinkle: Boolean = false,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     RotaryScrollColumn(modifier = modifier, topPadding = 0.dp, horizontalPadding = 0.dp) {
@@ -185,6 +186,7 @@ fun SceneScrollColumn(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(BLEED_SCENE_WIDTH.toFloat() / BLEED_SCENE_HEIGHT),
+            twinkle = twinkle,
         )
         Column(
             modifier = Modifier.padding(horizontal = 16.dp),

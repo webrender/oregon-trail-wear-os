@@ -100,6 +100,12 @@ fun Scene(
      */
     backdropScroll: Float? = null,
     /**
+     * Whether to lay a twinkling star field over the backdrop — see [drawTwinkle]. Only
+     * the title banner asks for it, and only because it is the one night sky the player
+     * sits looking at rather than passing through.
+     */
+    twinkle: Boolean = false,
+    /**
      * Reports a tap in scene coordinates rather than device pixels — see [SCENE_WIDTH].
      * Kept here rather than pushed onto the caller so that the maths positioning sprites
      * is the one place that also has to invert it.
@@ -132,6 +138,10 @@ fun Scene(
     // lambda instance — as this used to — tore down and restarted the gesture-detection
     // coroutine that often, which is often enough that a tap's down and up rarely landed
     // in the same coroutine and the shot was silently dropped almost every time.
+    // Held as state and read inside the Canvas below rather than here, so the tick
+    // repaints the scene without recomposing it. See [rememberTwinkle].
+    val tick = if (twinkle) rememberTwinkle() else null
+
     val currentOnTap = rememberUpdatedState(onTap)
     val tapModifier = if (onTap != null) {
         Modifier.pointerInput(Unit) {
@@ -158,6 +168,10 @@ fun Scene(
             if (backdropScroll == null) drawCovering(backdrop)
             else drawScrolling(backdrop, backdropScroll * scale)
         }
+        // Over the backdrop but under the sprites, so a star never shows through
+        // something standing in front of the sky.
+        if (tick != null) drawTwinkle(tick.value)
+
         for ((image, sprite) in loaded) drawInBox(image, sprite, scale)
     }
 }
