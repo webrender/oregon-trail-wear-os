@@ -160,9 +160,10 @@ class ArtNamesTest {
     @Test
     fun `every kind of encounter has a portrait`() {
         val sample = listOf(
-            Encounter.Traveler("test"),
+            Encounter.Scout("test"),
             Encounter.Trade(Good.FOOD, 1, Good.BULLETS, 1),
-            Encounter.Guide(costCents = 100, healthBenefit = 5),
+            Encounter.Healer(costCents = 100, healthBenefit = 5, patient = null),
+            Encounter.Riders(count = 4),
         )
         for (encounter in sample) {
             assertArtExists(ArtNames.forEncounter(encounter), "encounter $encounter")
@@ -240,6 +241,10 @@ class ArtNamesTest {
         GameEvent.WagonBroke("axle", hadSpare = true),
         GameEvent.WagonBroke("axle", hadSpare = false),
         GameEvent.SuppliesStolen("food", 30),
+        GameEvent.RidersFought(bulletsUsed = 18, drivenOff = true),
+        GameEvent.RidersFought(bulletsUsed = 22, drivenOff = false),
+        GameEvent.RidersOutran(miles = 14),
+        GameEvent.RidersOutran(miles = 0),
         GameEvent.SuppliesFound("wild fruit", 20),
         GameEvent.LostTime("heavy fog", 9),
         GameEvent.OutOfFood,

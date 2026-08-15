@@ -12,6 +12,27 @@ sealed interface GameEvent {
     data class OxDied(val remaining: Int) : GameEvent
     data class WagonBroke(val part: String, val hadSpare: Boolean) : GameEvent
     data class SuppliesStolen(val what: String, val amount: Int) : GameEvent
+
+    /**
+     * The result of standing and shooting at [Encounter.Riders].
+     *
+     * The only event not produced by a day of travel — [Encounters.face] raises it when
+     * the player picks [RidersResponse.FIGHT]. It exists because ammunition spent is the
+     * one consequence of that choice with nothing else to announce it: supplies taken and
+     * people killed already have events, and a fight that went well would otherwise leave
+     * the player looking at an unexplained hole in the bullet count.
+     */
+    data class RidersFought(val bulletsUsed: Int, val drivenOff: Boolean) : GameEvent
+
+    /**
+     * The result of running from [Encounter.Riders], raised by the same call.
+     *
+     * [miles] can legitimately be zero — a party that met riders on the day they reached a
+     * landmark has no ground on the current leg to give up — which is exactly why this
+     * exists rather than a [LostTime]: the choice always costs the party their strength,
+     * and that cost needs saying even on the day it costs no distance.
+     */
+    data class RidersOutran(val miles: Int) : GameEvent
     data class SuppliesFound(val what: String, val amount: Int) : GameEvent
     data class LostTime(val reason: String, val miles: Int) : GameEvent
     data object OutOfFood : GameEvent

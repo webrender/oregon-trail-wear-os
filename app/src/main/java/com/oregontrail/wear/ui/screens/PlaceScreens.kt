@@ -16,6 +16,7 @@ import com.oregontrail.wear.core.CrossingResult
 import com.oregontrail.wear.core.Encounter
 import com.oregontrail.wear.core.LandmarkKind
 import com.oregontrail.wear.core.Outcome
+import com.oregontrail.wear.core.RidersResponse
 import com.oregontrail.wear.core.Rivers
 import com.oregontrail.wear.core.Scoring
 import com.oregontrail.wear.ui.EventText
@@ -35,6 +36,7 @@ import com.oregontrail.wear.ui.describeQuantity
 import com.oregontrail.wear.ui.money
 import com.oregontrail.wear.ui.ordinal
 import com.oregontrail.wear.ui.short
+import com.oregontrail.wear.ui.shortName
 import com.oregontrail.wear.ui.theme.AppleII
 import com.oregontrail.wear.ui.theme.AppleIIChrome
 
@@ -93,11 +95,11 @@ fun RiverScreen(controller: GameController) {
     val state = controller.game
     val conditions = controller.riverConditions ?: return
     val landmark = state.currentLandmark
-    val available = conditions.available(state.inventory.cashCents)
+    val available = conditions.available(state.inventory)
 
     SceneScrollColumn(background = ArtNames.landmark(landmark.id)) {
         Gap(4)
-        ScreenTitle(landmark.name.removeSuffix(" Crossing"))
+        ScreenTitle(landmark.shortName)
         ScreenText(
             "${conditions.widthFeet}ft wide, ${conditions.depthFeet}ft deep",
             color = AppleII.Green,
@@ -110,12 +112,24 @@ fun RiverScreen(controller: GameController) {
                 small = true,
             )
         }
+        // The guide is the only crossing option attached to a person, and the only one a
+        // player can arrive without the means to take. Showing him makes the offer legible
+        // at a glance, and makes his absence legible too: a party that spent its clothing
+        // sees the river with nobody standing at it.
+        if (CrossingMethod.HIRE_GUIDE in available) {
+            Gap(6)
+            PixelArtImage(name = ArtNames.PORTRAIT_GUIDE, size = 64.dp)
+        }
         Gap(10)
         for (method in available) {
             MenuChip(
                 label = method.displayName,
                 secondaryLabel = crossingAdvice(method, controller),
-                primary = method == CrossingMethod.FORD && !conditions.isDangerousToFord,
+                primary = if (conditions.isDangerousToFord) {
+                    method == CrossingMethod.HIRE_GUIDE
+                } else {
+                    method == CrossingMethod.FORD
+                },
                 onClick = { controller.cross(method) },
             )
             Gap(6)
@@ -129,8 +143,22 @@ private fun crossingAdvice(method: CrossingMethod, controller: GameController): 
         CrossingMethod.CAULK -> "Risky on wide rivers"
         CrossingMethod.FERRY ->
             money(controller.riverConditions?.ferryCostCents ?: 0) + ", and safe"
+        CrossingMethod.HIRE_GUIDE ->
+            "${controller.riverConditions?.guideCostSets ?: 0} sets of clothing"
         CrossingMethod.WAIT -> "3 days; it may drop"
     }
+
+/**
+ * What each answer to the riders costs, stated as a currency rather than as odds.
+ *
+ * The odds are deliberately not shown. Which of the three is right depends on what the
+ * wagon is short of, and reading that off the supply screen is the decision.
+ */
+private fun ridersAdvice(response: RidersResponse): String = when (response) {
+    RidersResponse.FIGHT -> "Costs ammunition"
+    RidersResponse.FLEE -> "Costs miles and strength"
+    RidersResponse.PAY -> "Costs supplies, for certain"
+}
 
 /** What the river did. Shown once, then dismissed by a tap. */
 @Composable
@@ -159,6 +187,7 @@ private fun crossingArt(
     result is CrossingResult.Capsized || result is CrossingResult.LostSupplies -> "river_capsize"
     method == CrossingMethod.FERRY -> "river_ferry"
     method == CrossingMethod.CAULK -> "river_caulk"
+    method == CrossingMethod.HIRE_GUIDE -> "river_guide"
     method == CrossingMethod.FORD -> "river_ford"
     // Waiting leaves you looking at the same river you were looking at before.
     else -> ArtNames.landmark(controller.game.currentLandmark.id)
@@ -355,9 +384,9 @@ fun EncounterScreen(controller: GameController) {
         PixelArtImage(name = ArtNames.forEncounter(encounter), size = 96.dp)
         Gap(8)
         when (encounter) {
-            is Encounter.Traveler -> {
-                ScreenTitle("A fellow traveller")
-                ScreenText(encounter.tip, color = AppleII.White)
+            is Encounter.Scout -> {
+                ScreenTitle("A party heading east")
+                ScreenText(encounter.report, color = AppleII.White)
                 Gap(12)
                 MenuChip(
                     label = "Continue on",
@@ -379,19 +408,48 @@ fun EncounterScreen(controller: GameController) {
                 MenuChip(label = "Decline", onClick = { controller.dismissEncounter() })
             }
 
-            is Encounter.Guide -> {
-                ScreenTitle("A guide")
-                ScreenText("Offers advice for a fee", color = AppleII.White)
+            is Encounter.Healer -> {
+                ScreenTitle("A frontier doctor")
+                ScreenText(
+                    if (encounter.patient != null) {
+                        "Will treat ${encounter.patient} and see to the party"
+                    } else {
+                        "Will see to the party's health"
+                    },
+                    color = AppleII.White,
+                )
                 Gap(10)
                 MenuChip(
-                    label = "Hire",
+                    label = "Pay the fee",
                     secondaryLabel = money(encounter.costCents),
                     primary = true,
                     enabled = state.inventory.cashCents >= encounter.costCents,
-                    onClick = { controller.hireGuide() },
+                    onClick = { controller.payHealer() },
                 )
                 Gap(6)
                 MenuChip(label = "Decline", onClick = { controller.dismissEncounter() })
+            }
+
+            // The one encounter with no way out but through, so there is no dismissal
+            // chip here — every option below costs the party something.
+            is Encounter.Riders -> {
+                ScreenTitle("Riders")
+                ScreenText(
+                    "${encounter.count} of them, keeping pace with the wagon",
+                    color = AppleII.Orange,
+                )
+                Gap(10)
+                for (response in RidersResponse.entries) {
+                    MenuChip(
+                        label = response.displayName,
+                        secondaryLabel = ridersAdvice(response),
+                        primary = response == RidersResponse.PAY,
+                        enabled = response != RidersResponse.FIGHT ||
+                            controller.canFightRiders,
+                        onClick = { controller.faceRiders(response) },
+                    )
+                    Gap(6)
+                }
             }
         }
     }

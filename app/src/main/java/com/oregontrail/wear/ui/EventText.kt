@@ -38,6 +38,21 @@ object EventText {
             }
 
         is GameEvent.SuppliesStolen -> "Thieves took ${event.amount} of your ${event.what}."
+
+        is GameEvent.RidersFought ->
+            if (event.drivenOff) {
+                "You drove them off. ${event.bulletsUsed} rounds spent."
+            } else {
+                "They took what they came for. ${event.bulletsUsed} rounds spent."
+            }
+
+        is GameEvent.RidersOutran ->
+            if (event.miles > 0) {
+                "You outran them, and gave up ${event.miles} miles doing it."
+            } else {
+                "You outran them. The party is spent."
+            }
+
         is GameEvent.SuppliesFound -> "You found ${event.amount} of ${event.what}."
         is GameEvent.LostTime -> "You lost ${event.miles} miles to ${event.reason}."
         GameEvent.OutOfFood -> "There is not enough food. The party goes hungry."
@@ -60,6 +75,8 @@ object EventText {
         is GameEvent.ArrivedAt,
         is GameEvent.OxDied,
         is GameEvent.FellIll,
+        is GameEvent.RidersFought,
+        is GameEvent.RidersOutran,
         -> true
 
         is GameEvent.WagonBroke -> !event.hadSpare

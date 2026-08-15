@@ -17,10 +17,10 @@ is a plain `ComponentActivity` under `Theme.DeviceDefault`, and there is no
 hits the system dismiss gesture and kills the activity. Horizontal drag is the single
 gesture we can least afford to claim, and a pannable map claims exactly it.
 
-**Note that [0004](0004-unified-input-scheme.md) is stale on this point.** It says
-"swiping right goes back, which is the Wear OS system gesture users already expect."
-Nothing implements a back, so in practice a right swipe ends the run. That is a separate
-bug from this screen, but it is why panning is not on the table.
+[0004](0004-unified-input-scheme.md) used to say the opposite — "swiping right goes back,
+which is the Wear OS system gesture users already expect" — and this ADR flagged it as
+stale. It was corrected on 2026-08-14 and now states the rule directly: no horizontal
+gesture is available anywhere in this app.
 
 Touch is wrong here for 0004's own reason as well: a finger dragging across a 1.2" map
 covers most of the map it is dragging.

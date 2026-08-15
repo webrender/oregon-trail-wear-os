@@ -270,6 +270,40 @@ Within the width:
 - The corners are behind the bezel, as always. The banks only need to read across the
   middle two thirds of the height.
 
+### P4 — the encounters rework (3)
+
+Added 2026-08-15 with the encounter rewrite, and **delivered the same day** — all three
+are in `art-source/` and wired up. Prompts and the reasoning behind each clause are in
+[art-spec.md](art-spec.md).
+
+| Name | Size | What it is |
+|---|---|---|
+| `portrait_doctor` | portrait | A frontier doctor, met on the trail. Replaces the old advice-for-a-fee guide encounter. Asking for real money — $15–60, against a farmer's whole purse of $400 — so should look like someone worth it: a bag, a coat, the bearing of someone who has done this before. Not a quack. |
+| `portrait_riders` | portrait | Riders shadowing the wagon, meaning to take what they can. Also shown on the outcome screen after a fight, so it works as a *threat* rather than a portrait of one person — several mounted figures at distance, faces not readable. |
+| `river_guide` | backdrop | The Snake River crossing with a hired Shoshone guide leading the team through the water. The only new backdrop. |
+
+`portrait_guide` is **not** retired — it moves. It now appears on the Snake River
+crossing screen next to the "Hire a guide" option, at 64dp rather than the encounters'
+96dp, so it should still read at two thirds the size. If the existing file doesn't, this
+is the one to redraw.
+
+**The riders are what the note above is about.** They descend from the 1978 text version's
+"riders ahead", where they were Native American and the game asked whether to shoot them.
+They are road agents here, and are drawn as such: no feathers, no war paint, no shorthand.
+If the picture only reads as *dangerous* through ethnicity, it is the wrong picture. The
+doctor has the same rule from the other side — a person with a trade, not a costume.
+
+**`river_guide` is the deliberate exception, and it is not the same thing.** Its guide is
+Shoshone and wears a single eagle feather, which is not shorthand but the documented
+Great Basin headdress — the Plains war bonnet is the cliché, and a single feather is the
+accurate choice. The Snake River pilots really were Shoshone; that fact is the whole
+reason the crossing option exists. The rule above bans a figure who reads as their
+category *only* through a stereotype. It does not ban drawing a real people accurately,
+and erasing them from a crossing they historically piloted would be its own distortion.
+The sourcing is set out under `river_guide` in [art-spec.md](art-spec.md) — read it before
+changing that image, because the accurate choice here looks at first glance like the
+inaccurate one.
+
 ## Checking your work
 
 `ArtNamesTest` fails the build if any name the UI can ask for has no file behind it,

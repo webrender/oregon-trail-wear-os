@@ -2,7 +2,6 @@ package com.oregontrail.wear.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.focusable
-import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,7 +24,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
-import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.input.rotary.onRotaryScrollEvent
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
@@ -129,18 +127,6 @@ private const val CURRENT_PER_TICK = 1.15f
  * It was 0.35, which made that twelve clicks across and felt like poling a barge.
  */
 private const val STEER_GAIN = 0.6f
-
-/**
- * The same knob for a finger, which is a separate number because it starts somewhere
- * different: a drag is already reported in device pixels of actual movement, so 1.0 here
- * would be a raft that tracks the finger exactly.
- *
- * That sounds like it ought to be right and is not, because the finger is not *on* the
- * raft — this is a relative drag from anywhere on the glass, not a grab. Tracking exactly
- * meant crossing the channel cost 270 pixels of travel on a 384 pixel display, which is a
- * deliberate two-stage swipe at a moment when there is no time for one.
- */
-private const val DRAG_GAIN = 1.6f
 
 /**
  * The gap between rocks, and the number this screen is most sensitive to.
@@ -292,8 +278,10 @@ private data class Drifter(val x: Int, val y: Float)
  * which is the shape of the 1985 original — see docs/reference/game-mechanics-1985.md,
  * where the rest of that design and the two faults worth fixing are written up. The
  * crown steers rather than a d-pad, per ADR 0004: a finger on this screen covers the
- * rocks it is trying to miss. Dragging works too, for a player who reaches for the glass
- * before the crown.
+ * rocks it is trying to miss. It is also the only steering there is — a horizontal drag
+ * used to work as a fallback, but steering right is the system dismiss gesture, so the
+ * fallback's own direction could end the run, and an interrupted descent is a run that
+ * never happened.
  *
  * Collisions are *graded* here, which is the fix for the original's flattest edge: how
  * far the raft's box overlaps the rock's decides whether the river calls it a graze or a
@@ -516,12 +504,7 @@ private fun RaftRun(controller: GameController) {
                 true
             }
             .focusRequester(focusRequester)
-            .focusable()
-            .pointerInput(Unit) {
-                detectHorizontalDragGestures { _, dragAmount ->
-                    raftX += dragAmount / pixelsPerUnit * DRAG_GAIN
-                }
-            },
+            .focusable(),
     ) {
         Scene(
             background = ArtNames.RAFT_RIVER,

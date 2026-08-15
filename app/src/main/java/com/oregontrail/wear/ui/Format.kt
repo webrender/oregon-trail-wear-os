@@ -1,6 +1,8 @@
 package com.oregontrail.wear.ui
 
 import com.oregontrail.wear.core.Good
+import com.oregontrail.wear.core.Landmark
+import com.oregontrail.wear.core.LandmarkId
 import com.oregontrail.wear.core.TrailDate
 
 /**
@@ -131,3 +133,22 @@ fun ordinal(place: Int): String {
  * so it carries no information after the first screen that states it.
  */
 val TrailDate.short: String get() = "${monthName.take(3)} $day"
+
+/**
+ * A landmark's name with everything that is not the name taken off.
+ *
+ * For the two places a name has to fit a line that the round display crops hard: the map's
+ * title, and the heading over a river crossing. "Crossing" is redundant when the screen
+ * *is* the crossing, and "Missouri" is redundant when the map is of the west — both cost
+ * about 100 pixels, which is the difference between fitting and being silently sliced off
+ * by the bezel. See `MapLabelTest` for the budget these have to stay inside.
+ *
+ * The Columbia is the one name the rules do not reduce far enough on their own, and it is
+ * listed rather than handled by a rule about leading articles, which would also turn The
+ * Dalles into "Dalles".
+ */
+val Landmark.shortName: String
+    get() = when (id) {
+        LandmarkId.COLUMBIA_RIVER -> "Columbia River"
+        else -> name.substringBefore(',').removeSuffix(" Crossing")
+    }

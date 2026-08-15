@@ -51,16 +51,73 @@ class RiverCrossingTest {
         val kansas = RiverCrossing.conditionsAt(atRiver(LandmarkId.KANSAS_RIVER))!!
         val bigBlue = RiverCrossing.conditionsAt(atRiver(LandmarkId.BIG_BLUE_RIVER))!!
 
-        assertTrue(kansas.available(cashCents = 100_00).contains(CrossingMethod.FERRY))
-        assertFalse(kansas.available(cashCents = 0).contains(CrossingMethod.FERRY))
-        assertFalse(bigBlue.available(cashCents = 100_00).contains(CrossingMethod.FERRY))
+        assertTrue(kansas.available(purse(cashCents = 100_00)).contains(CrossingMethod.FERRY))
+        assertFalse(kansas.available(purse(cashCents = 0)).contains(CrossingMethod.FERRY))
+        assertFalse(bigBlue.available(purse(cashCents = 100_00)).contains(CrossingMethod.FERRY))
     }
 
     @Test
     fun `fording and waiting are always available`() {
         val conditions = RiverCrossing.conditionsAt(atRiver())!!
-        val options = conditions.available(cashCents = 0)
+        val options = conditions.available(purse())
         assertTrue(options.containsAll(listOf(CrossingMethod.FORD, CrossingMethod.CAULK, CrossingMethod.WAIT)))
+    }
+
+    /** A wagon carrying nothing but what a crossing option might ask for. */
+    private fun purse(cashCents: Int = 0, clothingSets: Int = 0): Inventory =
+        Inventory(cashCents = cashCents, clothingSets = clothingSets)
+
+    @Test
+    fun `a guide is offered at the Snake and nowhere else`() {
+        val snake = RiverCrossing.conditionsAt(atRiver(LandmarkId.SNAKE_RIVER))!!
+        val green = RiverCrossing.conditionsAt(atRiver(LandmarkId.GREEN_RIVER))!!
+        val enough = purse(clothingSets = RiverCrossing.GUIDE_COST_SETS)
+
+        assertTrue(snake.available(enough).contains(CrossingMethod.HIRE_GUIDE))
+        assertFalse(green.available(enough).contains(CrossingMethod.HIRE_GUIDE))
+    }
+
+    @Test
+    fun `a guide is not offered to a party without the clothing to pay`() {
+        val snake = RiverCrossing.conditionsAt(atRiver(LandmarkId.SNAKE_RIVER))!!
+        val short = purse(clothingSets = RiverCrossing.GUIDE_COST_SETS - 1)
+
+        assertFalse(snake.available(short).contains(CrossingMethod.HIRE_GUIDE))
+    }
+
+    @Test
+    fun `hiring a guide costs clothing whether or not the crossing goes well`() {
+        val state = atRiver(LandmarkId.SNAKE_RIVER)
+        val conditions = RiverCrossing.conditionsAt(state)!!
+
+        val after = RiverCrossing.cross(state, conditions, CrossingMethod.HIRE_GUIDE).state
+
+        assertEquals(
+            state.inventory.clothingSets - RiverCrossing.GUIDE_COST_SETS,
+            after.inventory.clothingSets,
+        )
+    }
+
+    /**
+     * The 80% risk reduction Bouchard states for the 1985 guide, measured rather than
+     * asserted about a constant — this is the property the number exists to produce, and
+     * it would survive a refactor that quietly stopped applying the multiplier.
+     */
+    @Test
+    fun `a guide capsizes far less often than fording the same river`() {
+        fun capsizes(method: CrossingMethod): Int = (1L..400L).count { seed ->
+            val state = atRiver(LandmarkId.SNAKE_RIVER, weather = Weather.RAINY, seed = seed)
+            val conditions = RiverCrossing.conditionsAt(state)!!
+            RiverCrossing.cross(state, conditions, method).result !is CrossingResult.Safe
+        }
+
+        val forded = capsizes(CrossingMethod.FORD)
+        val guided = capsizes(CrossingMethod.HIRE_GUIDE)
+        assertTrue("fording a rainy Snake should be dangerous, was $forded in 400", forded > 100)
+        assertTrue(
+            "a guide should cut the risk hard: forded $forded, guided $guided in 400",
+            guided < forded / 3,
+        )
     }
 
     @Test

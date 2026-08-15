@@ -25,6 +25,7 @@ import com.oregontrail.wear.core.RaftImpact
 import com.oregontrail.wear.core.RaftOutcome
 import com.oregontrail.wear.core.Rafting
 import com.oregontrail.wear.core.Rations
+import com.oregontrail.wear.core.RidersResponse
 import com.oregontrail.wear.core.Rng
 import com.oregontrail.wear.core.RiverConditions
 import com.oregontrail.wear.core.RiverCrossing
@@ -395,7 +396,7 @@ class GameController(
     fun cross(method: CrossingMethod) {
         val current = game
         val conditions = RiverCrossing.conditionsAt(current) ?: return
-        if (method !in conditions.available(current.inventory.cashCents)) return
+        if (method !in conditions.available(current.inventory)) return
 
         val outcome = RiverCrossing.cross(current, conditions, method)
         commit(outcome.state)
@@ -450,7 +451,7 @@ class GameController(
 
     // ---- Encounters ----
 
-    /** Waves off a traveller, or declines a trade or a guide's offer. */
+    /** Waves off a scout, or declines a trade or a doctor's offer. */
     fun dismissEncounter() {
         pendingEncounter = null
     }
@@ -461,10 +462,21 @@ class GameController(
         pendingEncounter = null
     }
 
-    fun hireGuide() {
-        val guide = pendingEncounter as? Encounter.Guide ?: return
-        commit(Encounters.hire(game, guide))
+    fun payHealer() {
+        val healer = pendingEncounter as? Encounter.Healer ?: return
+        commit(Encounters.treat(game, healer))
         pendingEncounter = null
+    }
+
+    /** True while a fight with riders is worth offering — see [Encounters.canFight]. */
+    val canFightRiders: Boolean get() = state?.let { Encounters.canFight(it) } ?: false
+
+    fun faceRiders(response: RidersResponse) {
+        val riders = pendingEncounter as? Encounter.Riders ?: return
+        val outcome = Encounters.face(game, riders, response)
+        pendingEncounter = null
+        commit(outcome.state)
+        absorbEncounter(outcome.events)
     }
 
     // ---- Hunting ----
@@ -580,6 +592,26 @@ class GameController(
         scores = placement.table
         lastPlacement = placement.rank
         scoreboard.save(placement.table)
+    }
+
+    /**
+     * Queues the consequences of an encounter the player just decided.
+     *
+     * Deliberately not [absorb]. Two differences, both of which matter. It leaves
+     * [lastDayMiles] and [arrivedThisDay] alone, because an encounter resolves *after* the
+     * day it interrupted has already been banked — running it through [absorb] would zero
+     * the day's mileage on the travel readout and swallow the arrival screen for a party
+     * that met riders on the same day they reached a landmark. And it pauses on every
+     * event rather than consulting [EventText.pausesTravel]: the player has just made a
+     * choice and is owed the result of it, so 60 lb of food taken by road agents is not
+     * the footnote that the same 60 lb lost to a river is.
+     */
+    private fun absorbEncounter(events: List<GameEvent>) {
+        pendingEvents = pendingEvents + events
+        val current = state
+        if (pendingEvents.isEmpty() && current != null && current.isOver) {
+            screen = Screen.GameOver
+        }
     }
 
     /** Sorts a day's events into what stops the wagon and what merely scrolls past. */

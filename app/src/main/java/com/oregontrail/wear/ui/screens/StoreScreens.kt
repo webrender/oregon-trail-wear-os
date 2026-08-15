@@ -83,6 +83,24 @@ fun StoreScreen(controller: GameController) {
 private const val ROTARY_PIXELS_PER_STEP = 40f
 
 /**
+ * The width reserved for the quantity between the two buttons.
+ *
+ * Fixed rather than wrapped so the buttons hold still while the number changes under
+ * them — a control that shuffles sideways as you tap it is hard to tap twice.
+ *
+ * Sized to the content, because the round display leaves no slack. Wear's [Button] is
+ * locked at [ButtonDefaults.DefaultButtonSize] (52dp) — it applies `requiredSize`
+ * internally, so passing a smaller `Modifier.size` does nothing — which makes this the
+ * only give in the row. At the previous 96dp the row came to 200dp on a screen only 192dp
+ * wide, so the buttons ran off both edges and the circle clipped what was left.
+ *
+ * 4 digits covers the largest ceiling in [purchaseCeiling] (1,000 pounds of food), and the
+ * font is monospaced at one cell per glyph — 8 source pixels, so 16dp at the x4 display
+ * size — hence 64dp of glyph plus a little air.
+ */
+private val QUANTITY_WIDTH = 68.dp
+
+/**
  * Buying a quantity of one good.
  *
  * Hand-built rather than using Wear's [androidx.wear.compose.material.Stepper], which
@@ -159,7 +177,7 @@ fun StoreItemScreen(controller: GameController, good: Good) {
                     color = AppleII.Green,
                     style = MaterialTheme.typography.display3,
                     textAlign = TextAlign.Center,
-                    modifier = Modifier.width(96.dp),
+                    modifier = Modifier.width(QUANTITY_WIDTH),
                 )
                 Button(
                     onClick = { adjust(step) },

@@ -6,9 +6,20 @@ raise the watch's dictation sheet, triple-tap to swap disk sides. That scheme wa
 rejected by play testing and is superseded along with the emulator itself; see
 [0005](0005-native-reimplementation.md). What follows replaces it.
 
-**The crown is the primary control.** Rotating it moves the selection within a list;
-tapping confirms; swiping right goes back, which is the Wear OS system gesture users
-already expect. Nothing else is overloaded.
+Corrected 2026-08-14: the rewrite claimed a right swipe went back. It never did, and no
+back was ever implemented — see [Correction: swipe-right does not go
+back](#correction-swipe-right-does-not-go-back) at the end.
+
+**The crown is the primary control.** Rotating it moves the selection within a list and
+tapping confirms. Nothing else is overloaded — and nothing is a swipe. Going back is an
+explicit on-screen action: a `Back` chip in a menu, or a tap anywhere on a screen that
+has nothing else to tap, as the map does.
+
+**No gesture in this app is horizontal.** A right swipe never reaches us at all — there
+is no `SwipeDismissableNavHost` and `MainActivity` is a plain `ComponentActivity`, so the
+swipe hits the Wear OS system dismiss gesture and kills the activity, ending the run.
+Horizontal drag is therefore the one gesture we cannot claim, and any screen that wants
+one has to find another control.
 
 The single most important rule: **the app never asks the player to type.** Every
 decision in the game is a selection from a bounded set, because we own the game loop and
@@ -38,3 +49,25 @@ personalisation is part of why people remember it. A curated list is a genuine l
 expressiveness, accepted because a text field on this screen is worse than a
 constrained one. If we ever want custom names, the right place is a companion phone
 app or a one-time setup on first launch, not mid-game.
+
+## Correction: swipe-right does not go back
+
+Until 2026-08-14 this ADR said "swiping right goes back, which is the Wear OS system
+gesture users already expect." That was aspirational and was never built.
+`GameController.go()` assigns `screen` and nothing keeps a history, so there is nothing
+to go back *to* — the swipe is handled by the system, which dismisses the activity and
+ends the run. A player following the documented gesture loses their game.
+
+The correction is written into the scheme above rather than left as a footnote, because
+it changes what the scheme permits: **no horizontal gesture is available anywhere in this
+app.** Two decisions already turned on that and were made without this document's help:
+
+- [0006](0006-map-screen.md) chose a crown-scrubbed strip over a pannable map, and had to
+  flag this ADR as stale to justify it.
+- `RaftScreen` carried a horizontal drag as a steering fallback beside the crown. It was
+  removed on 2026-08-14: steering right *is* the dismiss gesture, so the fallback could
+  end a descent that is never saved, and it contradicted this ADR's own reason for the
+  crown — a finger covers the rocks it is trying to miss.
+
+Adding real back handling would reopen this, and is the prerequisite for any horizontal
+interaction. Until then, back is an on-screen affordance and the crown does the steering.

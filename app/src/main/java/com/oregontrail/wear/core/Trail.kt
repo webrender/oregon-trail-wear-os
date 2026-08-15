@@ -44,11 +44,16 @@ sealed interface LandmarkKind {
      * Must be crossed. [typicalDepthFeet] is the centre of the distribution the actual
      * depth is drawn from at arrival; weather shifts it. Fording a river deeper than
      * [Rivers.DANGEROUS_DEPTH_FEET] is the documented way to lose a wagon.
+     *
+     * [guideAvailable] marks the one crossing the 1985 version let you hire help at — the
+     * Snake, where Shoshone guides piloted wagons and livestock across for payment in
+     * clothing. See [CrossingMethod.HIRE_GUIDE] and docs/reference/game-mechanics-1985.md.
      */
     data class River(
         val widthFeet: Int,
         val typicalDepthFeet: Double,
         val ferryAvailable: Boolean,
+        val guideAvailable: Boolean = false,
     ) : LandmarkKind
 
     /**
@@ -202,7 +207,12 @@ object Trail {
         ),
         Landmark(
             LandmarkId.SNAKE_RIVER, "Snake River Crossing",
-            LandmarkKind.River(widthFeet = 1000, typicalDepthFeet = 3.6, ferryAvailable = false),
+            LandmarkKind.River(
+                widthFeet = 1000,
+                typicalDepthFeet = 3.6,
+                ferryAvailable = false,
+                guideAvailable = true,
+            ),
             listOf(Route(LandmarkId.FORT_BOISE, 114)),
         ),
         Landmark(

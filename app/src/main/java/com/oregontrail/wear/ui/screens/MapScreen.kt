@@ -36,6 +36,7 @@ import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
@@ -53,6 +54,7 @@ import com.oregontrail.wear.ui.art.TrailMap
 import com.oregontrail.wear.ui.components.Gap
 import com.oregontrail.wear.ui.components.StaticScreen
 import com.oregontrail.wear.ui.counted
+import com.oregontrail.wear.ui.shortName
 import com.oregontrail.wear.ui.theme.AppleII
 import com.oregontrail.wear.ui.theme.AppleIIChrome
 import kotlin.math.roundToInt
@@ -61,11 +63,35 @@ import kotlin.math.roundToInt
  * The shape of the map band: its width over its height.
  *
  * Tiles are square and drawn as tall as the band, so this is also how many of them fit
- * across it — a shade under one and a half, or about 500 miles of country at the eastern
- * end. Wide enough that a landmark is seen in the context of its neighbours, tall enough
- * to leave room above and below for the two lines of text.
+ * across it — a shade under one and nine tenths, or about 640 miles of country at the
+ * eastern end. Wide enough that a landmark is seen in the context of its neighbours.
+ *
+ * It was 1.5, and the extra width is really extra *height* given back to the two lines of
+ * text: the band is full-bleed, so the taller it is the closer the title sits to the top
+ * of the display, where the round bezel crops hardest. At 1.5 the title's line began at
+ * y=35, where only 221 of the 384 pixels are actually visible, and "Green River Crossing"
+ * — 292 pixels of it — was silently sliced at both ends. At 1.9 the line begins at y=57
+ * and 273 pixels are visible, which clears the longest name on the trail. The margin is
+ * only a few pixels, so both this and [TITLE_WIDTH] are pinned by `MapLabelTest` rather
+ * than left to be re-derived by hand.
  */
-private const val MAP_ASPECT = 1.5f
+internal const val MAP_ASPECT = 1.9f
+
+/**
+ * How much of the display's width the two text lines may use.
+ *
+ * Not a taste decision — it is the chord of the visible circle where those lines sit, and
+ * the whole reason this constant exists rather than a comfortable-looking 0.8. Compose
+ * measures against the display's *square* framebuffer, so text that fits the layout can
+ * still be a third wider than the part of the display anyone can see; the bezel then takes
+ * a bite out of both ends and nothing in the toolchain says a word about it.
+ *
+ * Deliberately paired with one line and an ellipsis rather than with wrapping. Wrapping
+ * makes this *worse*: a second line grows the centred column, which pushes the first line
+ * further up into a narrower chord, so a name too wide to fit ends up clipped harder than
+ * it started. An ellipsis is at least visible.
+ */
+internal const val TITLE_WIDTH = 0.70f
 
 /** Half the band's width, in tiles. */
 private const val HALF_VIEW = MAP_ASPECT / 2f
@@ -193,12 +219,13 @@ fun MapScreen(controller: GameController) {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                text = Trail[stops[selected]].name,
+                text = Trail[stops[selected]].shortName,
                 color = AppleII.Green,
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.caption1,
-                maxLines = 2,
-                modifier = Modifier.fillMaxWidth(0.8f),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(TITLE_WIDTH),
             )
             Gap(4)
             Canvas(
@@ -222,7 +249,8 @@ fun MapScreen(controller: GameController) {
                 textAlign = TextAlign.Center,
                 style = MaterialTheme.typography.caption3,
                 maxLines = 1,
-                modifier = Modifier.fillMaxWidth(0.8f),
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.fillMaxWidth(TITLE_WIDTH),
             )
         }
     }

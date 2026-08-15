@@ -13,9 +13,11 @@ ammunition box size and per-profession starting money — were supplied by the u
 | [ayebear/oregon-trail](https://github.com/ayebear/oregon-trail) | Trail graph with exact distances, river depth/width/ferry flags | **No license file — all rights reserved.** Do not copy code. Facts only. |
 | [attilabuti/Oregon-Trail](https://github.com/attilabuti/Oregon-Trail) | Go recreation of the 1978 text version | Unspecified |
 | GameFAQs walkthrough (ASchultz, 2000), vendored in ayebear repo as `original_game/strategy_and_path.txt` | Store price table, scoring, pace/ration rates | Fan documentation |
-| [philipbouchard.com](https://www.philipbouchard.com/oregon-trail/) | Design intent from the 1985 lead designer; landmark order; the Columbia rafting game | Author's own site |
+| [philipbouchard.com](https://www.philipbouchard.com/oregon-trail/) | Design intent from the 1985 lead designer; landmark order; the Columbia rafting game; talking to people ([including-humans](https://www.philipbouchard.com/oregon-trail/including-humans.html)); river crossings and the Snake River guide ([crossing-rivers](https://www.philipbouchard.com/oregon-trail/crossing-rivers.html)) | Author's own site |
 | [died-of-dysentery.com](https://www.died-of-dysentery.com/stories/rafting-columbia.html) | Second-hand account of the rafting game as played | Fan documentation |
 | AppleWin `source/RGBMonitor.cpp` (in-repo submodule) | Authoritative hi-res palette RGB | GPL-3.0 — values are facts, not code |
+| [died-of-dysentery.com](https://www.died-of-dysentery.com/stories/imagining-appleII.html) | Player-side account of the 1985 design: talking to people, trading between landmarks | Fan documentation |
+| StrategyWiki / GameFAQs (cjry, ASchultz) | Snake River guide price in clothing; trade-offer suppression rules | Fan documentation — **both 403 to automated fetch; what we have is search snippets, not verified against the page.** Flagged inline wherever used |
 
 **Key legal read:** game rules, numbers, and data tables are facts and not
 copyrightable. The 1985 game's *prose* (landmark descriptions, event text) and its
@@ -165,6 +167,98 @@ Documented ways to get stuck or killed:
 
 Diseases named in the 1985 version: **typhoid, cholera, measles, dysentery, exhaustion,
 fever** — plus injuries (broken limbs, snakebite).
+
+Note a conflict on the ford threshold. This list says 3 feet (fan documentation);
+Bouchard describes his own algorithm branching at 2.5 — "if the depth of the river is
+currently less than 2.5 feet – which is shallow enough to ford – then there is one set
+of results," with risk sliding upward above that. The designer is the better source, but
+`Rivers.DANGEROUS_DEPTH_FEET` is 3.0 and the trail graph's depths were tuned around it,
+so this is recorded rather than acted on.
+
+## People on the trail
+
+Researched 2026-08-15, after noticing `core/Encounter.kt` was the one mechanic in the
+game with no sourced basis. It turns out the 1985 version had a great deal to say here,
+and split it across **two separate systems** that we had merged into one.
+
+**Talking to people — at landmarks, player-initiated.** Bouchard's research found that
+"people tended to congregate at key landmarks along the trail – such as forts, river
+crossings, and famous geologic features," including "not only other travelers, but also
+Native Americans, local traders, and soldiers." So the design put them there: "at each
+landmark in the game, my design allows the player to meet and talk to three different
+people," and "if you choose to 'talk to someone', then one of those three people will be
+randomly chosen, and that person will deliver a short monologue." Three per landmark
+across 16 landmarks is roughly 60 written characters.
+
+Critically, this was **not** pure flavour. Bouchard: "this is an important method for
+obtaining helpful hints and discovering historical and geographic details," and "many of
+these conversations provide helpful hints about how to survive the journey." The hints
+are anchored to the place you are standing in — a character at the Snake River quotes
+the 1846 Shively guidebook at you: *"You must hire an Indian to pilot you at the
+crossings of the Snake river, it being dangerous if not perfectly understood."* Which is
+advice about the decision on the very next screen.
+
+**Trading — between landmarks, player-initiated.** A deliberately "crude and simple"
+system "for making emergency trades with other emigrants": "at any time between
+landmarks, the player can attempt to swap items with passers-by. This can be quite
+helpful under certain circumstances, especially if a crucial wagon part has broken."
+Bouchard says he abandoned plans for anything more elaborate. Two shape details from fan
+documentation: offers you could not legally accept were suppressed rather than shown
+(yielding the "no one wants to trade with you today" message), and the game would not
+offer an item you were already maxed out on.
+
+**Hiring a guide — a river crossing option, not an encounter.** This is the find that
+matters most for us. At the Snake River, hiring a Shoshone guide was a **fourth crossing
+method** alongside ford / caulk / ferry, paid in **sets of clothing**, and Bouchard gives
+the tuning directly: it "reduces your risk by 80%." Fan documentation puts the price at
+1–5 sets of clothing and claims it scales with how much buffalo you have killed — the
+less you kill, the better the price. That price rule is uncorroborated and comes from
+search snippets rather than a page I could open (StrategyWiki and GameFAQs both 403 to
+automated fetches); treat the 80% as sourced and the price rule as folklore until
+someone verifies it.
+
+### What we implement
+
+Reworked 2026-08-15 off the research above. The guide went back where the original had
+it; the rest stayed interrupts, because a watch has no room for a landmark submenu three
+levels deep and the trail screen is where the player already is.
+
+| 1985 | Ours |
+|---|---|
+| Talk to people: landmark menu, 3 fixed characters, hints anchored to that place | *Cut.* `Encounter.Scout` derived every report from the run, and is kept in the code, but is no longer rolled — see below |
+| Attempt to trade: player-initiated between landmarks, for emergencies | `Encounter.Trade`: unchanged, an interrupt with random goods |
+| Hire a guide: crossing option at the Snake, paid in clothing, −80% risk | `CrossingMethod.HIRE_GUIDE`: same place, same currency (3 sets), same 80% |
+| *(no equivalent)* | `Encounter.Healer`: a frontier doctor, $15–25, or $35–60 with someone to treat — which also cures the ailment |
+| *(1978 only: "riders ahead", hostile Native Americans)* | `Encounter.Riders`: road agents, 18% of encounters in the plains/Rockies/desert. Fight, flee, or pay |
+
+Three notes on the departures.
+
+**The scout was cut, and the reports were not enough to save it.** The design bet was
+that deriving every report from the run would carry the encounter: a fixed string about
+rivers running high is decoration, whereas "no ferry at the Snake, and they want clothing
+to pilot you across" is a reason to spend money at Fort Hall. The reports did work as
+specified — they stop at the next branch point, so a scout never describes a road the
+player has not chosen, and the arrival forecast is genuinely something no screen computes.
+In play it still read as trivia rather than as something to act on, and it cost a full
+stop on the trail to deliver. Truthful turned out not to mean useful.
+
+`Encounter.Scout`, `Encounters.reports` and its derivations, the screen, and the portrait
+are all kept and still under test; only the roll in `Encounters.roll` dropped it, with its
+45% share redistributed across trade and the doctor. Reinstating it is one line — but the
+thing to fix first is what a report is worth, not how often it appears.
+
+**Clothing is what makes the guide a decision.** Cash at the Snake is nearly spent
+anyway, and the ferry has already established $5 as the price of safety. Clothing is
+checked against the survivor count by the cold-weather penalty, and the Snake is the last
+river before the Blue Mountains — so three sets is a party going into the mountains
+underclothed. That is the same shape of trade the original struck, in the currency it
+used.
+
+**The riders are not the 1978 encounter.** That one's framing — Native American riders,
+attack or run — is exactly what Bouchard's redesign removed, replacing it with the
+Shoshone guide two rows up this table. Reviving it three files from its own inversion
+was not an option, so the mechanic is kept and the framing is not: they are road agents,
+and the art brief says so explicitly.
 
 ## Hunting
 
