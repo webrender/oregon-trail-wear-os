@@ -4,7 +4,7 @@ A native Kotlin reimplementation of *The Oregon Trail* (1985, Apple II), built f
 round screen and rotating crown of a Wear OS watch. Not an emulator — every screen,
 control, and pixel-art asset here is original, hand-fit to a 1.2" circular display.
 
-**[Play it in a browser →](https://webrender.github.io/oregon-trail-wear-os/)**
+**[Play it in a browser →](https://webrender.net/oregon-trail-wear-os/)**
 
 It also runs on the web, compiled to WebAssembly. Same code, same 192dp round screen,
 magnified and set in a bezel — the mouse wheel turns the crown, and the arrow keys steer

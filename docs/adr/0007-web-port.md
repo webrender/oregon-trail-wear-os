@@ -104,7 +104,9 @@ watch and nothing re-runs there.
 A GitHub Actions workflow builds `wasmJsBrowserDistribution` on every push to `master` and
 deploys it to Pages. The output is already a self-contained static site and every URL in
 `index.html` is relative, so it works unchanged under the `/oregon-trail-wear-os/` path a
-project site is served from — nothing in the build knows the repository's name.
+project site is served from — nothing in the build knows the repository's name, which is
+just as well: this account has a user-level custom domain, so the site is served from
+`webrender.net/oregon-trail-wear-os/` rather than from `github.io` at all.
 
 The runners need the Android SDK even though nothing Android is built, because `:shared`
 applies `com.android.library` for its Wear OS target and AGP resolves an SDK during
