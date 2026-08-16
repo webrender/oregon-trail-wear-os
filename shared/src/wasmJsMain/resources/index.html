@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <title>The Oregon Trail</title>
+    <style>
+        /*
+         * The page is the bezel's surround and nothing else. Everything visible is drawn
+         * by Compose into the canvas below — see Main.kt, which puts a 192dp round screen
+         * in the middle of it at a whole-number magnification.
+         */
+        html, body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background: #000;
+            /* The game reads every arrow key. Letting the page scroll on them too would
+               shift the canvas out from under the pointer while the map is being scrubbed. */
+            overscroll-behavior: none;
+        }
+
+        /* No text selection anywhere: a drag across a menu is a scroll, not a selection,
+           and the I-beam cursor over a watch face is a giveaway that it is a web page. */
+        body {
+            user-select: none;
+            -webkit-user-select: none;
+            cursor: default;
+        }
+
+        #loading {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #1E6B00;
+            font: 16px ui-monospace, SFMono-Regular, Menlo, monospace;
+            letter-spacing: 0.15em;
+        }
+    </style>
+</head>
+<body>
+<!--
+  Shown until the wasm module has fetched the font and is ready to draw, at which point
+  `main()` removes it — Compose appends its canvas rather than replacing the body, so this
+  would otherwise sit above the watch and push it off centre. It is worth having: the
+  runtime is about 10MB before compression, and a blank black page for several seconds
+  reads as a site that failed to load.
+-->
+<div id="loading">OUTFITTING THE WAGON&hellip;</div>
+<script src="oregontrail.js"></script>
+</body>
+</html>
