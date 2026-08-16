@@ -26,15 +26,23 @@ decision in the game is a selection from a bounded set, because we own the game 
 can define it that way:
 
 - Party names come from a curated list of period-appropriate names, not a text field.
-- Hunting is aim-and-fire with the crown and a tap — not typing `BANG`.
+- Hunting is tap-to-shoot — you tap where the shot should go, not type `BANG`.
 - Menu choices, pace, rations, and river crossings are pickers.
 - Store purchases are quantity steppers.
 
 Rotary-first matters specifically on this device. On a 1.2" round screen a finger
 covers a meaningful fraction of the display while it is touching it, so any interaction
 that requires the player to *see* what they are selecting while selecting it is better
-driven from the crown, where the hand stays off the glass. Tap is reserved for commit,
-which is the one action where obscuring the screen briefly costs nothing.
+driven from the crown, where the hand stays off the glass. Tap is otherwise reserved for
+commit, which is the one action where obscuring the screen briefly costs nothing.
+
+**Hunting is the exception, and it is not a compromise.** There the tap *is* the aim: you
+tap the point on the scene the bullet should travel toward, and the shot is spent whether
+it lands or not. A crown cannot express a point on a plane, and threading a moving
+crosshair through one with a control that only turns would be strictly worse than pointing
+at the place — the thing a touchscreen is actually good at. The finger-covers-the-screen
+objection does not apply either: the tap and the decision are the same instant, so there
+is nothing to keep watching while it happens.
 
 This also removes the latency complaint the old scheme carried. Because tap no longer
 has to disambiguate against double- and triple-tap, it can fire immediately instead of

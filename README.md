@@ -42,8 +42,9 @@ All captured on the `Wear_OS_Large_Round` emulator (454×454, API 33).
 - **The crown is the primary control.** Rotating it moves the selection in a list;
   tapping confirms; swiping right goes back. Nothing else is overloaded.
 - **No free text anywhere.** Party names come from a curated period-appropriate list,
-  hunting is aim-and-fire with the crown and a tap, and every decision — pace, rations,
-  river crossings, purchases — is a picker or a stepper, never a keyboard.
+  hunting is tap-to-shoot — you tap where the bullet should go and lead the animal — and
+  every decision — pace, rations, river crossings, purchases — is a picker or a stepper,
+  never a keyboard.
 - **Pixel art**, reminiscent of Apple II composite-NTSC rendering but drawn from
   scratch — no original MECC art is used or referenced pixel-for-pixel. See
   [`docs/art-brief.md`](docs/art-brief.md) for the style guide and asset pipeline.

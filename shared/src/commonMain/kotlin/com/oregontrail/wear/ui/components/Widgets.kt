@@ -125,9 +125,12 @@ expect fun StepperButton(
  * Wires the crown — or whatever stands in for it — to a scroll amount in pixels.
  *
  * On the watch this is `onRotaryScrollEvent` plus the focus request that makes it fire at
- * all. In the browser it is the mouse wheel, the arrow keys, and a draggable crown on the
- * bezel, all reporting in the same units, so that everything downstream — the store's
- * detents, the map's landmark steps, the raft's steering gain — is calibrated once.
+ * all. In the browser it is the mouse wheel and the arrow keys, both reporting in the same
+ * units, so that everything downstream — the store's detents, the map's landmark steps,
+ * the raft's steering gain — is calibrated once.
+ *
+ * Note what does *not* go through here: hunting. Its aim is the tap itself, and a control
+ * that only turns cannot express a point on a plane — see ADR 0004.
  */
 @Composable
 expect fun Modifier.rotaryInput(onScroll: (pixels: Float) -> Unit): Modifier
