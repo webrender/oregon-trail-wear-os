@@ -81,13 +81,16 @@ private const val CARCASS_HEIGHT = 10
 
 /**
  * Where the rifle's muzzle sits in the hunter's own box — the one point on him that is
- * nowhere near centred, since the barrel is held straight out to the right.
+ * nowhere near centred, since the barrel is held straight out ahead of him.
  *
  * Measured off `hunter_shoot.png` rather than guessed. The art is trimmed to its visible
  * pixels, so the muzzle is the rightmost thing in the file and lands exactly on the right
- * edge of the box; the barrel sits a little over a fifth of the way down.
+ * edge of the box; the barrel sits a little over a fifth of the way down. Mirroring the
+ * sprite to face left mirrors the muzzle with it, onto the left edge of the same box.
  */
-private const val MUZZLE_X = HUNTER_X + HUNTER_WIDTH
+private fun muzzleX(facingRight: Boolean): Int =
+    if (facingRight) HUNTER_X + HUNTER_WIDTH else HUNTER_X
+
 private const val MUZZLE_Y = HUNTER_Y + 6
 
 /**
@@ -224,6 +227,9 @@ fun HuntingScreen(controller: GameController) {
     var carcass by remember { mutableStateOf<Carcass?>(null) }
     var bullet by remember { mutableStateOf<Bullet?>(null) }
     var shotFlash by remember { mutableStateOf(false) }
+    // Which way the hunter is turned. Set by the last shot he took and held there, so he
+    // stands facing wherever he last aimed rather than snapping back to the right.
+    var facingRight by remember { mutableStateOf(true) }
     var leaving by remember { mutableStateOf(false) }
 
     LaunchedEffect(ground) {
@@ -364,6 +370,8 @@ fun HuntingScreen(controller: GameController) {
                     bullet?.let {
                         add(Sprite(ArtNames.HUNT_BULLET, it.x.toInt(), it.y.toInt(), 1, 1))
                     }
+                    // Both hunter frames are authored facing right, so facing left is the
+                    // mirrored draw — the same trick the animals use above.
                     add(
                         Sprite(
                             if (shotFlash) ArtNames.HUNTER_SHOOT else ArtNames.HUNTER_STAND,
@@ -371,6 +379,7 @@ fun HuntingScreen(controller: GameController) {
                             HUNTER_Y,
                             HUNTER_WIDTH,
                             HUNTER_HEIGHT,
+                            flip = !facingRight,
                         )
                     )
                 },
@@ -385,12 +394,18 @@ fun HuntingScreen(controller: GameController) {
                             delay(SHOT_FLASH_MILLIS)
                             shotFlash = false
                         }
-                        val dx = (x - MUZZLE_X).toFloat()
+                        // He turns to the shot before taking it: a tap left of where he
+                        // stands swings him left, one to the right swings him back. The
+                        // muzzle moves with him, so the bullet always leaves the barrel
+                        // and never crosses through his own body to get there.
+                        facingRight = x >= HUNTER_X + HUNTER_WIDTH / 2
+                        val muzzle = muzzleX(facingRight)
+                        val dx = (x - muzzle).toFloat()
                         val dy = (y - MUZZLE_Y).toFloat()
                         val distance = sqrt(dx * dx + dy * dy)
                         if (distance >= 1f) {
                             bullet = Bullet(
-                                x = MUZZLE_X.toFloat(),
+                                x = muzzle.toFloat(),
                                 y = MUZZLE_Y.toFloat(),
                                 vx = dx / distance * BULLET_SPEED_PER_TICK,
                                 vy = dy / distance * BULLET_SPEED_PER_TICK,
