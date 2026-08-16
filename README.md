@@ -18,6 +18,22 @@ than reflowing for a window.
 Personal project, built for and tested on a Pixel Watch 2. Sideload-only; not published
 to the Play Store (see [ADR 0002](docs/adr/0002-sideload-only-distribution.md)).
 
+## Installing on a watch
+
+**[Download the latest APK →](https://github.com/webrender/oregon-trail-wear-os/releases/latest)**
+
+No SDK and no build required. With the watch paired over
+[wireless debugging](https://developer.android.com/training/wearables/get-started/debugging):
+
+```
+adb install -r oregon-trail-wear-<version>.apk
+```
+
+Needs Wear OS 4 (API 33) or newer. Every release is signed with the same key, so a later
+one installs over an earlier one and keeps your save; an APK you build yourself is signed
+differently and will not, which is the one case where you have to uninstall first. See
+[ADR 0008](docs/adr/0008-signed-apk-releases.md).
+
 ## Design
 
 - **The crown is the primary control.** Rotating it moves the selection in a list;
@@ -50,6 +66,11 @@ adb install -r app/build/outputs/apk/debug/app-debug.apk
 
 Minimum SDK is Wear OS 4 / API 33 (what the Pixel Watch 2 ships). There's no native
 code and no NDK dependency, so the build is a plain Gradle/Kotlin/Compose project.
+
+`assembleRelease` works the same way and signs with the debug key unless the release
+keystore is passed in — judge performance from that one, never from a debug build, which
+cannot be AOT-compiled. Pushing a `v*` tag runs `.github/workflows/release.yml`, which
+builds the same variant with the real key and publishes it to Releases.
 
 **The browser:**
 

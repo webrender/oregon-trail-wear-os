@@ -10,6 +10,15 @@ kotlin {
     }
 }
 
+// The release-signing material and the published version number, supplied as Gradle
+// properties. `.github/workflows/release.yml` passes them from the repository's secrets
+// when a tag is pushed; an ordinary local build passes none of them and gets the debug
+// key and the placeholder version below, exactly as before.
+val releaseKeystore = findProperty("keystore") as String?
+val releaseKeystorePassword = findProperty("keystorePassword") as String?
+val releaseKeyAlias = findProperty("keyAlias") as String?
+val releaseKeyPassword = findProperty("keyPassword") as String?
+
 android {
     namespace = "com.oregontrail.wear"
     compileSdk = 36
@@ -19,8 +28,27 @@ android {
         // Pixel Watch 2 ships Wear OS 4 (API 33).
         minSdk = 33
         targetSdk = 34
-        versionCode = 1
-        versionName = "0.1"
+        // Placeholders for local builds. A published build overrides both: the name comes
+        // from the git tag, and the code from the workflow run number — which only ever
+        // increases, so a release can never be refused as a downgrade of the one before
+        // it. Deriving the code from the tag instead would mean agreeing a scheme that
+        // survives 0.9 → 0.10, and there is nothing to gain from it.
+        versionCode = (findProperty("versionCode") as String?)?.toInt() ?: 1
+        versionName = (findProperty("versionName") as String?) ?: "0.1"
+    }
+
+    signingConfigs {
+        // Only declared when the material is actually present, so that a build without it
+        // fails at `getByName("release")` below rather than producing an APK signed with
+        // an empty key.
+        if (releaseKeystore != null) {
+            create("release") {
+                storeFile = file(releaseKeystore)
+                storePassword = releaseKeystorePassword
+                keyAlias = releaseKeyAlias
+                keyPassword = releaseKeyPassword
+            }
+        }
     }
 
     // No native code, so no abiFilters: the APK is architecture-independent and
@@ -36,13 +64,24 @@ android {
                 "proguard-rules.pro",
             )
 
-            // Signed with the debug key so `assembleRelease` produces something that
-            // installs straight onto the watch. This is a game with no accounts and no
-            // Play listing; the alternative is an unsigned APK that cannot be sideloaded,
-            // which would mean the only *testable* build is the debug one — and that is
-            // precisely the problem this build type exists to fix. Swap in a real key if
-            // this ever ships.
-            signingConfig = signingConfigs.getByName("debug")
+            // A published build is signed with the project's own key; a local one falls
+            // back to the debug key, so `assembleRelease` still produces something that
+            // installs straight onto the watch without anyone holding the real key. The
+            // alternative to both is an unsigned APK that cannot be sideloaded at all,
+            // which would mean the only *testable* build is the debug one — precisely the
+            // problem this build type exists to fix.
+            //
+            // The two signatures are not interchangeable on a watch: Android identifies an
+            // app by its certificate, so a locally built APK will not install over a
+            // downloaded release, or the reverse, without uninstalling first. That is a
+            // one-time annoyance for whoever develops the game and the correct behaviour
+            // for everyone else, who only ever sees the released signature.
+            signingConfig =
+                if (releaseKeystore != null) {
+                    signingConfigs.getByName("release")
+                } else {
+                    signingConfigs.getByName("debug")
+                }
         }
     }
 
