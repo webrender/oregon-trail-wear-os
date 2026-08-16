@@ -108,7 +108,7 @@ private fun Watch(controller: GameController) {
     // How many times the watch fits in the window, floored, never below one. A window too
     // small for even 1x gets 1x and clips, which is the right failure: the alternative is
     // a fractional scale that makes the text unreadable rather than merely cropped.
-    val scale = (shortest / WATCH_PIXELS).coerceAtLeast(1)
+    val scale = (shortest / WATCH_PIXELS).coerceIn(1, MAX_SCALE)
 
     Box(
         modifier = Modifier.fillMaxSize().background(BEZEL),
@@ -139,6 +139,21 @@ private fun Watch(controller: GameController) {
 private const val WATCH_PIXELS = 384
 private const val WATCH_DP = 192
 private const val WATCH_DENSITY = 2f
+
+/**
+ * The largest the watch is drawn, and the limit is the art rather than the window.
+ *
+ * `scripts/prepare-art.py` caps each asset at the biggest size it is ever drawn on a
+ * *watch*, plus half again of headroom — 820 pixels for a full-bleed backdrop. A backdrop
+ * covers the display and overshoots it by about 1.14x, so 2x (a 768-pixel screen) asks for
+ * 875 and is a 7% upscale nobody can see. 3x would ask for 1313 from the same 820 and be a
+ * 60% upscale, which on art this soft-edged is very visible indeed.
+ *
+ * A 768-pixel watch in a 1400-pixel window looks like a watch, which is the intent. Raising
+ * this means regenerating the art from the masters at a larger cap, and paying for those
+ * pixels on every download.
+ */
+private const val MAX_SCALE = 2
 
 private val BEZEL = Color(0xFF0A0A0A)
 private val BEZEL_EDGE = Color(0xFF1E1E1E)

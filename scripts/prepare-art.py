@@ -93,20 +93,29 @@ BACKDROP_NAMES = {
 }
 FIGURE_NAMES = {"tombstone", "ox_dead"}
 
-# Assets written as an indexed PNG with a small palette rather than full RGB.
+# Every asset is written as an indexed PNG rather than full RGB(A).
 #
-# The map tiles look like flat 16-colour art but arrive with ~124,000 distinct
-# colours: the generator anti-aliases, and the downscale above adds more. PNG
-# compresses that badly, and six tiles cost 5.8MB against 23MB for the whole rest
-# of the game. Quantised they cost 1.2MB, and an A/B at full asset size is
-# indistinguishable — unsurprising for art that was only ever meant to hold about
-# sixteen colours, and which the watch downscales again before drawing.
+# This began scoped to the map tiles, which look like flat 16-colour art but arrive
+# with ~124,000 distinct colours: the generator anti-aliases, and the downscale
+# above adds more. PNG compresses that badly. It was widened to everything on
+# 2026-08-15 for the web build, where the whole set is downloaded over a wire
+# rather than installed once, and the numbers turned out to be the same story
+# everywhere — **19.1MB of assets became 3.4MB**, and the APK went from 22MB to 6MB
+# with it.
 #
-# Scoped to a prefix on purpose. The rest of the art is shipped and play-tested,
-# and quietly re-encoding all of it to chase the same saving is a separate
-# decision from getting the map in.
-QUANTIZED = ("map_",)
-QUANTIZE_COLOURS = 32
+# The reason it is nearly free is that this art only ever held six colours. Every
+# asset is authored against the Apple II hi-res palette (see `ui/theme/AppleII.kt`);
+# the tens of thousands of colours in the files are entirely resampling noise from
+# the LANCZOS downscale above, concentrated on block edges that are then drawn
+# smaller again. An A/B of a landmark scene at 64, 128 and 256 colours against the
+# original, magnified 2x, is indistinguishable in all four panels — and so is a
+# sprite composited over magenta, which is the test that would show alpha damage.
+#
+# 256 rather than the 32 the map tiles used, because it costs almost nothing:
+# across the whole set 64 colours gives 2.7MB and 256 gives 3.7MB, and at 256 an
+# 8-bit palette index is still one byte per pixel. Spend the megabyte — see
+# [quantize] for what a too-small palette did to the map.
+QUANTIZE_COLOURS = 256
 
 # The bullet was authored twice: an opaque version on a black field, and a
 # transparent one. Only the transparent one can be composited over terrain.
@@ -135,6 +144,32 @@ def visible_box(image: Image.Image):
     return None if box in (None, (0, 0) + image.size) else box
 
 
+def quantize(image: Image.Image) -> Image.Image:
+    """The image as an indexed PNG's worth of colours. See [QUANTIZE_COLOURS].
+
+    FASTOCTREE rather than MEDIANCUT, for two independent reasons, and the second one
+    is why the map tiles were regenerated rather than left alone.
+
+    **It is half the size.** An octree buckets colours by their high bits, so the
+    result is spatially coherent — large flat runs of one index, which is exactly
+    what PNG's filters compress. MEDIANCUT picks a better-fitting palette and then
+    scatters it across the image. Measured through this pipeline at 256 colours, a
+    landmark scene is 105KB one way and 238KB the other.
+
+    **It keeps rare colours.** MEDIANCUT allocates palette entries by how many pixels
+    want them, so a detail that covers a fraction of a percent of the image loses its
+    entry to a gradient nobody is looking at. The map tiles' violet trail markings are
+    262 pixels out of 672,400 — and the tiles shipped between the map landing and
+    2026-08-15 had **zero** violet pixels in them, because MEDIANCUT at 32 colours had
+    quietly thrown the trail away. FASTOCTREE keeps all of it.
+
+    It also quantises the alpha channel rather than discarding it, which MEDIANCUT
+    cannot: that one needs `convert("RGB")` first, and flattening a sprite's
+    transparency puts a hard black box around it.
+    """
+    return image.convert("RGBA").quantize(colors=QUANTIZE_COLOURS, method=Image.FASTOCTREE)
+
+
 def main() -> None:
     if not SOURCE.is_dir():
         sys.exit(f"No authored art at {SOURCE}")
@@ -160,12 +195,9 @@ def main() -> None:
             size = (max(1, round(width * scale)), max(1, round(height * scale)))
             image = image.resize(size, Image.LANCZOS)
 
-        if name.startswith(QUANTIZED):
-            # After the resize, never before: resampling invents colours, so
-            # quantising first would just have them back again.
-            image = image.convert("RGB").quantize(
-                colors=QUANTIZE_COLOURS, method=Image.MEDIANCUT, dither=Image.NONE
-            )
+        # After the resize, never before: resampling invents colours, so quantising
+        # first would just have them back again.
+        image = quantize(image)
 
         image.save(DEST / f"{name}.png", optimize=True)
         print(f"{name:24} {authored[0]:5d}x{authored[1]:<5d} -> "

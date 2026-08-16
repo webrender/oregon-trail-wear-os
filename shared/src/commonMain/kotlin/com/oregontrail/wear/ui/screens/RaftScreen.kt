@@ -41,6 +41,7 @@ import com.oregontrail.wear.ui.components.MenuChip
 import com.oregontrail.wear.ui.components.SceneScrollColumn
 import com.oregontrail.wear.ui.components.ScreenText
 import com.oregontrail.wear.ui.components.ScreenTitle
+import com.oregontrail.wear.ui.components.steeringHint
 import com.oregontrail.wear.ui.counted
 import com.oregontrail.wear.ui.theme.AppleII
 import com.oregontrail.wear.ui.theme.AppleIIChrome
@@ -314,7 +315,7 @@ private fun RaftBriefing(onPushOff: () -> Unit) {
         // the fold — a briefing the player has to scroll is a briefing they skip.
         ScreenText("Fifty miles of white water.", color = AppleII.White, small = true)
         Gap(8)
-        ScreenText("Crown steers.", color = AppleII.Green, small = true)
+        ScreenText(steeringHint, color = AppleII.Green, small = true)
         ScreenText("Miss the rocks.", color = AppleII.Green, small = true)
         ScreenText("Land at sign three.", color = AppleII.Green, small = true)
         Gap(10)
