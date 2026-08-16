@@ -4,6 +4,10 @@ A native Kotlin reimplementation of *The Oregon Trail* (1985, Apple II), built f
 round screen and rotating crown of a Wear OS watch. Not an emulator — every screen,
 control, and pixel-art asset here is original, hand-fit to a 1.2" circular display.
 
+<p align="center">
+  <img src="docs/images/montage.gif" width="384" alt="A journey from Independence to Oregon City">
+</p>
+
 **[Play it in a browser →](https://webrender.net/oregon-trail-wear-os/)**
 
 It also runs on the web, compiled to WebAssembly. Same code, same 192dp round screen,
@@ -13,29 +17,6 @@ than reflowing for a window.
 
 Personal project, built for and tested on a Pixel Watch 2. Sideload-only; not published
 to the Play Store (see [ADR 0002](docs/adr/0002-sideload-only-distribution.md)).
-
-## Screenshots
-
-All captured on the `Wear_OS_Large_Round` emulator (454×454, API 33).
-
-| | |
-|---|---|
-| ![Title screen](docs/images/title.png) | ![Choosing a profession](docs/images/profession.png) |
-| Title screen | Choosing a profession |
-| ![The general store](docs/images/store.png) | ![Store goods list](docs/images/store-list.png) |
-| The general store | Store goods list |
-| ![Buying a yoke of oxen](docs/images/store-buy.png) | ![On the trail](docs/images/trail.png) |
-| Quantity stepper for purchases | On the trail |
-| ![A trader encounter](docs/images/encounter-trader.png) | ![Supplies overview](docs/images/supplies.png) |
-| A trail encounter | Checking supplies |
-| ![Kansas River Crossing](docs/images/river.png) | ![Choosing how to cross](docs/images/river-choice.png) |
-| Arriving at a river | Choosing how to cross |
-| ![Fording the Kansas](docs/images/crossing.png) | ![Fort Kearney](docs/images/fort.png) |
-| Fording safely | Arriving at a fort |
-| ![The hunting minigame](docs/images/hunting.png) | ![Confirming abandonment of a run](docs/images/abandon.png) |
-| Hunting the prairie | Abandoning a run (no undo) |
-| ![Scoring a finished journey](docs/images/score.png) | ![The high score table](docs/images/high-scores.png) |
-| Scoring a finished journey | The ten best journeys |
 
 ## Design
 
