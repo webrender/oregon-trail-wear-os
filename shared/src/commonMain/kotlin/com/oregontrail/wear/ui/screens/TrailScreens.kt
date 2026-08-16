@@ -3,11 +3,13 @@ package com.oregontrail.wear.ui.screens
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -16,7 +18,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
 import com.oregontrail.wear.ui.theme.AppleIIType
 import com.oregontrail.wear.ui.components.Text
 import com.oregontrail.wear.core.Good
@@ -161,30 +165,69 @@ fun TrailScreen(controller: GameController) {
                 },
             )
             Gap(4)
-            Text(
-                text = if (moving) {
-                    counted(state.milesToNextLandmark, "mile") +
-                        " to ${state.headingLandmark?.name ?: "?"}"
+            // Everything below the scene lives in a band of fixed height, and the band is
+            // as tall as its tallest possible contents: four lines of caption plus the gap
+            // between the two blocks.
+            //
+            // The column is centred, so the height of this text is what positions the
+            // scene. Letting it size to its content made the wagon jump every time an
+            // event arrived and jump back when it cleared — a picture moving for reasons
+            // that have nothing to do with the picture. Reserving the maximum costs a
+            // little empty space under short messages and holds the scene still.
+            val bandHeight = with(LocalDensity.current) {
+                AppleIIType.caption1.lineHeight.toDp() * 4
+            } + 6.dp
+            val event = controller.ticker
+            Box(
+                modifier = Modifier.fillMaxWidth(0.8f).height(bandHeight),
+                contentAlignment = Alignment.Center,
+            ) {
+                if (event != null && moving) {
+                    // An event gets the whole band. Two lines was not enough for the
+                    // longer ones — a hunt summary carrying both meat and ammunition runs
+                    // past it — and the miles line it covers up is the one thing on this
+                    // screen that is still true a second later, so nothing is lost by
+                    // standing in front of it while the message is up.
+                    Text(
+                        text = event,
+                        color = AppleIIChrome.MutedGreen,
+                        textAlign = TextAlign.Center,
+                        style = AppleIIType.caption3,
+                        maxLines = 4,
+                    )
                 } else {
-                    "The wagon cannot move"
-                },
-                color = if (moving) AppleII.Green else AppleII.Orange,
-                textAlign = TextAlign.Center,
-                style = AppleIIType.caption1,
-                maxLines = 2,
-                modifier = Modifier.fillMaxWidth(0.8f),
-            )
-            // The bitmap font has no descender slack to spare, so two adjacent blocks of
-            // text sit close enough to read as one. This gap is doing real work.
-            Gap(6)
-            Text(
-                text = controller.ticker ?: "Tap for options",
-                color = AppleIIChrome.MutedGreen,
-                textAlign = TextAlign.Center,
-                style = AppleIIType.caption3,
-                maxLines = 2,
-                modifier = Modifier.fillMaxWidth(0.8f),
-            )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        // A wagon that cannot move keeps saying so even while an event is
+                        // up: it is a standing condition and the reason the days are
+                        // passing without progress, not a message that has been read.
+                        Text(
+                            text = if (moving) {
+                                counted(state.milesToNextLandmark, "mile") +
+                                    " to ${state.headingLandmark?.name ?: "?"}"
+                            } else {
+                                "The wagon cannot move"
+                            },
+                            color = if (moving) AppleII.Green else AppleII.Orange,
+                            textAlign = TextAlign.Center,
+                            style = AppleIIType.caption1,
+                            maxLines = 2,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        // The bitmap font has no descender slack to spare, so two adjacent
+                        // blocks of text sit close enough to read as one. This gap is
+                        // doing real work.
+                        Gap(6)
+                        Text(
+                            text = event ?: "Tap for options",
+                            color = AppleIIChrome.MutedGreen,
+                            textAlign = TextAlign.Center,
+                            style = AppleIIType.caption3,
+                            maxLines = 2,
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                    }
+                }
+            }
         }
     }
 }
