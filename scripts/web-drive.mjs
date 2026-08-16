@@ -79,6 +79,12 @@ async function shot(name) {
 ws.onopen = async () => {
   try {
     await send('Page.enable');
+    // No HTTP cache. `oregontrail.js` is not content-hashed, so a rebuild reuses its name
+    // and the browser will happily keep serving the previous wasm loader — which reads as
+    // "the fix did not work" rather than "you are running last build's code". Cost an hour
+    // once; not again.
+    await send('Network.enable');
+    await send('Network.setCacheDisabled', { cacheDisabled: true });
     // A fixed viewport, so that a step's click coordinates mean the same thing on every
     // run. The watch is centred in it: see `WATCH` in the step files.
     await send('Emulation.setDeviceMetricsOverride', {
@@ -86,6 +92,13 @@ ws.onopen = async () => {
     });
     for (const step of steps) {
       if (step.goto) { await send('Page.navigate', { url: step.goto }); }
+      // `js` runs an expression in the page. Its use is setup, not assertion — there is
+      // nothing in a Compose canvas to read back — so mostly clearing localStorage to get
+      // a deterministic starting state.
+      if (step.js) {
+        const r = await send('Runtime.evaluate', { expression: step.js, returnByValue: true });
+        console.log('js:', JSON.stringify(r.result?.value ?? null));
+      }
       if (step.wait) await sleep(step.wait);
       if (step.click) await click(step.click[0], step.click[1]);
       if (step.wheel) await wheel(step.wheel[0], step.wheel[1], step.wheel[2]);

@@ -51,6 +51,7 @@ import com.oregontrail.wear.ui.art.PixelArtImage
 import com.oregontrail.wear.ui.theme.AppleII
 import com.oregontrail.wear.ui.theme.AppleIIChrome
 import com.oregontrail.wear.ui.theme.AppleIIType
+import kotlinx.browser.window
 import kotlinx.coroutines.launch
 import kotlin.math.abs
 
@@ -84,6 +85,54 @@ private val BUTTON_SIZE = 52.dp
  * is one store step — one notch, one step, at any magnification.
  */
 private val WHEEL_NOTCH = 20.dp
+
+/**
+ * How much `scrollDelta` a browser reports for one notch of a wheel.
+ *
+ * **`scrollDelta.y` is not a count of notches.** It is the DOM `WheelEvent`'s `deltaY`,
+ * passed through unchanged — CSS pixels of scroll intent, and about 100 of them per notch
+ * in Chrome, Edge and Safari. Measured, not assumed: a synthetic wheel of `deltaY = 4` on
+ * the store's food screen moved the quantity by exactly four 25lb steps.
+ *
+ * Treating it as a notch count is what this constant exists to prevent, and the bug it
+ * caused was not subtle — one click of a real wheel reported 100, which at 20dp *each*
+ * asked for 100 steps and slammed the food quantity from nothing to the 1,000lb ceiling in
+ * a single detent. Dividing by it restores the intended relationship: one notch of wheel is
+ * one detent of crown, which is one store step, one landmark on the map, and 20dp of a
+ * scrolling list.
+ *
+ * Firefox is the known gap. It reports mouse wheels in *lines* (`deltaMode = 1`, about 3
+ * per notch) rather than pixels, and nothing here can see `deltaMode` to tell the
+ * difference — so a mouse wheel there will scroll roughly a thirtieth as far. That is a
+ * slow control rather than a broken one, which is the right way round for a failure that
+ * cannot be tested from here, and [wheelSensitivity] is the way out of it. Deliberately
+ * *not* guessed at from the magnitude of the delta: trackpads legitimately send single-digit
+ * pixel deltas, so "small means lines" would make every trackpad in Chrome unusably fast.
+ */
+private const val WHEEL_DELTA_PER_NOTCH = 100f
+
+/**
+ * A global multiplier on wheel input, from `?wheel=` in the URL. Default 1.
+ *
+ * Kept because no single constant above can be right everywhere: a mouse, a high-resolution
+ * wheel, a trackpad with momentum, and Firefox's line-mode deltas all report differently,
+ * and none of them can be detected from inside Compose. Rather than pretend otherwise, the
+ * number is adjustable in a few seconds — `?wheel=3` for Firefox, `?wheel=0.5` for a wheel
+ * that runs away — instead of by rebuilding 12MB of wasm.
+ *
+ * Read once, at startup. Unparseable and out-of-range values fall back to 1 rather than
+ * breaking the page, and the arrow keys deliberately ignore it: a key press is exactly one
+ * detent by construction and has no device variation to compensate for.
+ */
+private val wheelSensitivity: Float = run {
+    val requested = window.location.search
+        .removePrefix("?")
+        .split("&")
+        .firstOrNull { it.startsWith("wheel=") }
+        ?.removePrefix("wheel=")
+        ?.toFloatOrNull()
+    if (requested != null && requested > 0f && requested <= 20f) requested else 1f
+}
 
 /** Wear's `ScalingLazyColumn` shrinks and fades items away from the centre by about this
  *  much at the edge of the display. Matched by eye rather than by constant, since the
@@ -316,7 +365,7 @@ actual fun Modifier.rotaryInput(onScroll: (pixels: Float) -> Unit): Modifier {
     return this
         .onPointerEvent(PointerEventType.Scroll) { event ->
             val delta = event.changes.fold(0f) { sum, change -> sum + change.scrollDelta.y }
-            if (delta != 0f) onScroll(delta * notch)
+            if (delta != 0f) onScroll(delta / WHEEL_DELTA_PER_NOTCH * notch * wheelSensitivity)
         }
         .onKeyEvent { event ->
             if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
