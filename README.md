@@ -4,10 +4,12 @@ A native Kotlin reimplementation of *The Oregon Trail* (1985, Apple II), built f
 round screen and rotating crown of a Wear OS watch. Not an emulator — every screen,
 control, and pixel-art asset here is original, hand-fit to a 1.2" circular display.
 
-It also runs in a browser, compiled to WebAssembly. Same code, same 192dp round screen,
-magnified and set in a bezel — the mouse wheel turns the crown. See
-[ADR 0007](docs/adr/0007-web-port.md) for why it simulates the watch rather than
-reflowing for a window.
+**[Play it in a browser →](https://webrender.github.io/oregon-trail-wear-os/)**
+
+It also runs on the web, compiled to WebAssembly. Same code, same 192dp round screen,
+magnified and set in a bezel — the mouse wheel turns the crown, and the arrow keys steer
+the raft. See [ADR 0007](docs/adr/0007-web-port.md) for why it simulates the watch rather
+than reflowing for a window.
 
 Personal project, built for and tested on a Pixel Watch 2. Sideload-only; not published
 to the Play Store (see [ADR 0002](docs/adr/0002-sideload-only-distribution.md)).
@@ -79,6 +81,10 @@ That writes a self-contained static site to
 which can be dropped on any static host. It has to be served over HTTP rather than opened
 from disk: a `file://` page can neither instantiate WebAssembly nor fetch the art, and the
 failure looks like a game that loads and then draws nothing.
+
+`.github/workflows/pages.yml` does exactly that on every push to `master` and publishes
+the result to GitHub Pages. Add `?debug=1` to the URL for the jump-to-any-landmark menu
+the debug APK has.
 
 ## Testing
 
