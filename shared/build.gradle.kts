@@ -112,30 +112,22 @@ tasks.withType<Test>().configureEach {
  * Stage the art where the browser build can serve it.
  *
  * The web build fetches each PNG over HTTP on demand rather than bundling the set — see
- * `ArtLoader` in `wasmJsMain`. That means the files have to sit in the webpack output
- * next to the wasm, and they cannot simply live in `src/wasmJsMain/resources` as well:
- * they are already in `src/androidMain/assets`, and 20MB of art committed twice is 20MB
- * of art committed twice. This copies instead, so the watch's assets stay the one source.
+ * `ArtLoader` in `wasmJsMain`. That means the files have to end up in the webpack output
+ * next to the wasm, and they cannot simply be copied into `src/wasmJsMain/resources` and
+ * committed: they are already in `src/androidMain/assets`, and 20MB of art committed twice
+ * is 20MB of art committed twice. So they are staged into the build directory and that
+ * directory is registered as a resource root below, which is what carries them through
+ * `wasmJsProcessResources` into the distribution.
+ *
+ * Registering the *task provider* as the source directory rather than its output path is
+ * what makes Gradle infer the dependency, so nothing here has to name a task by string or
+ * copy anything at execution time.
  */
 val stageWebArt by tasks.registering(Sync::class) {
     from(layout.projectDirectory.dir("src/androidMain/assets"))
     into(layout.buildDirectory.dir("webArt"))
 }
 
-tasks.named("wasmJsProcessResources") { dependsOn(stageWebArt) }
-
-tasks.matching { it.name == "wasmJsBrowserDistribution" || it.name == "wasmJsBrowserDevelopmentRun" }
-    .configureEach { dependsOn(stageWebArt) }
-
-// The distribution webpack assembles has to carry the art with it, or the published site
-// is a game that draws nothing.
-tasks.matching { it.name == "wasmJsBrowserDistribution" }.configureEach {
-    val staged = layout.buildDirectory.dir("webArt")
-    val dist = layout.buildDirectory.dir("dist/wasmJs/productionExecutable")
-    doLast {
-        copy {
-            from(staged)
-            into(dist)
-        }
-    }
+kotlin.sourceSets.named("wasmJsMain") {
+    resources.srcDir(stageWebArt)
 }
