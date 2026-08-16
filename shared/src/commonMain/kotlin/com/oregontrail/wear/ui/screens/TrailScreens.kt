@@ -24,6 +24,7 @@ import com.oregontrail.wear.core.Pace
 import com.oregontrail.wear.core.Rations
 import com.oregontrail.wear.ui.GameController
 import com.oregontrail.wear.ui.Screen
+import com.oregontrail.wear.ui.abbreviated
 import com.oregontrail.wear.ui.art.ArtNames
 import com.oregontrail.wear.ui.art.SCENE_HEIGHT
 import com.oregontrail.wear.ui.art.SCENE_WIDTH
@@ -138,7 +139,7 @@ fun TrailScreen(controller: GameController) {
             ) {
                 IconValue(
                     iconArt = ArtNames.weather(state.weather),
-                    value = state.date.toString(),
+                    value = state.date.abbreviated,
                 )
             }
             Gap(4)

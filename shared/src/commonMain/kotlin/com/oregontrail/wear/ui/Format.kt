@@ -135,6 +135,17 @@ fun ordinal(place: Int): String {
 val TrailDate.short: String get() = "${monthName.take(3)} $day"
 
 /**
+ * The date with the month abbreviated but the year kept.
+ *
+ * For the trail screen's readout, which sits on one unwrapping line beside the weather
+ * icon: "September 21, 1848" is 18 characters and ran off the end of it, and the font is
+ * proportional, so which months overflow depends on their letters as well as their
+ * length. Cutting all twelve to three characters puts every date inside the same width.
+ * The year stays because that line is the only place on the trail that states it.
+ */
+val TrailDate.abbreviated: String get() = "${monthName.take(3)} $day, ${TrailDate.YEAR}"
+
+/**
  * A landmark's name with everything that is not the name taken off.
  *
  * For the two places a name has to fit a line that the round display crops hard: the map's

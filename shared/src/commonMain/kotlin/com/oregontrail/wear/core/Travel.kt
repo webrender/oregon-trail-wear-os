@@ -118,9 +118,12 @@ object WeatherModel {
 @Serializable
 data class TrailDate(val month: Int, val day: Int) {
     val monthName: String get() = MONTH_NAMES[month - 1]
-    override fun toString(): String = "$monthName $day, 1848"
+    override fun toString(): String = "$monthName $day, $YEAR"
 
     companion object {
+        /** The year the journey is set in, named so the screens can print it too. */
+        const val YEAR = 1848
+
         val MONTH_NAMES = listOf(
             "January", "February", "March", "April", "May", "June",
             "July", "August", "September", "October", "November", "December",
