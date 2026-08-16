@@ -31,6 +31,53 @@ class EncounterTest {
         }
     }
 
+    /**
+     * The one trade the party cannot be left to chance on. Below
+     * [GameState.MINIMUM_OXEN] nothing else in the game can put an ox back in the yoke,
+     * so a trader who turns up while the wagon is stuck always offers one, and always
+     * enough to move again.
+     */
+    @Test
+    fun `a trader always offers oxen to a wagon that cannot move`() {
+        for (oxen in 0..GameState.MINIMUM_OXEN - 1) {
+            val stranded = TestStates.outfitted(oxen = oxen)
+            var trades = 0
+            for (seed in 1L..300L) {
+                val encounter = Encounters.roll(stranded, Rng.seeded(seed))
+                if (encounter !is Encounter.Trade) continue
+                trades++
+                assertEquals(
+                    "offered ${encounter.gives} to a wagon holding $oxen oxen",
+                    Good.OXEN,
+                    encounter.gives,
+                )
+                assertTrue(
+                    "offered ${encounter.givesQuantity} oxen on top of $oxen, still stranded",
+                    oxen + encounter.givesQuantity >= GameState.MINIMUM_OXEN,
+                )
+                assertTrue(
+                    "asked a stranded wagon for its last ox",
+                    encounter.wants != Good.OXEN,
+                )
+            }
+            assertTrue("no trade turned up at all with $oxen oxen", trades > 0)
+        }
+    }
+
+    @Test
+    fun `a moving wagon is not handed free oxen`() {
+        val moving = TestStates.outfitted(oxen = 6)
+        val offers = (1L..600L)
+            .map { Encounters.roll(moving, Rng.seeded(it)) }
+            .filterIsInstance<Encounter.Trade>()
+
+        assertTrue("no trades turned up to check", offers.isNotEmpty())
+        assertTrue(
+            "every trade offered oxen to a wagon that can already move",
+            offers.any { it.gives != Good.OXEN },
+        )
+    }
+
     @Test
     fun `accepting a trade moves goods both ways`() {
         val state = TestStates.outfitted(bullets = 40, clothingSets = 1)

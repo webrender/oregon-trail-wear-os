@@ -310,18 +310,37 @@ object Encounters {
      * a run, before the store visit, that's every good.
      */
     private fun rollTrade(state: GameState, rng: Rng): Encounter.Trade? {
-        val held = Good.entries.filter { state.inventory.amountOf(it) > 0 }
+        // A party below [GameState.MINIMUM_OXEN] cannot travel at all, and no other
+        // encounter, event or screen can put an ox back in the yoke — the store is the
+        // only other source and reaching one requires the movement they have lost. Left
+        // to chance the trader offered oxen about one day in 250, which made a stranding
+        // a formality rather than a setback: the run was over, but it took the party
+        // starving to death to say so.
+        //
+        // So a trader who finds a stranded wagon always offers what it is missing, and
+        // enough of it to roll again. The rescue still has to be paid for out of what
+        // the wagon is carrying, and still has to be accepted, so this shortens a dead
+        // end without making one costless.
+        val stranded = state.inventory.oxen < GameState.MINIMUM_OXEN
+
+        // The last ox is not on the table while they are stranded. Trading it away would
+        // deepen exactly the hole this is digging them out of.
+        val tradeable = if (stranded) Good.entries.filter { it != Good.OXEN } else Good.entries
+        val held = tradeable.filter { state.inventory.amountOf(it) > 0 }
         if (held.isEmpty()) return null
 
         val wants = rng.pick(held)
-        val gives = rng.pick(Good.entries.filter { it != wants })
+        val gives = if (stranded) Good.OXEN else rng.pick(Good.entries.filter { it != wants })
         val wantsMax = minOf(state.inventory.amountOf(wants), offerCeiling(wants))
+        // Enough to reach the minimum, which is two from nothing and one from a single
+        // surviving ox. An offer that left them still stranded would be no offer at all.
+        val givesMin = if (stranded) GameState.MINIMUM_OXEN - state.inventory.oxen else 1
 
         return Encounter.Trade(
             wants = wants,
             wantsQuantity = rng.nextInt(1, wantsMax),
             gives = gives,
-            givesQuantity = rng.nextInt(1, offerCeiling(gives)),
+            givesQuantity = rng.nextInt(givesMin, offerCeiling(gives)),
         )
     }
 
