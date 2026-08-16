@@ -12,7 +12,7 @@ kotlin {
 
 android {
     namespace = "com.oregontrail.wear"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.oregontrail.wear"

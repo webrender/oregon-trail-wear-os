@@ -70,7 +70,7 @@ android {
     // sharing a namespace generate two `R` classes with the same fully-qualified name,
     // and the one that wins is whichever the compiler sees first.
     namespace = "com.oregontrail.wear.shared"
-    compileSdk = 37
+    compileSdk = 36
 
     defaultConfig {
         minSdk = 33

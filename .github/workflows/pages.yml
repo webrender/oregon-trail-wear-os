@@ -1,0 +1,64 @@
+##
+# Build the browser game and publish it to GitHub Pages.
+#
+# The site is whatever `wasmJsBrowserDistribution` writes: the wasm, its JS loader,
+# `index.html`, and the art staged in beside them. Every URL in the page is relative, so
+# it works unchanged under the `/oregon-trail-wear-os/` path a project site is served
+# from — nothing here needs to know the repository's name.
+#
+# The Android SDK is needed even though nothing Android is built. `:shared` applies the
+# `com.android.library` plugin for its Wear OS target, and AGP resolves an SDK during
+# *configuration*, before it knows that the only task being asked for is a wasm one. The
+# GitHub-hosted Ubuntu runners ship the SDK and set `ANDROID_HOME`, so this costs nothing
+# but is the first thing to check if the build starts failing on a runner image change.
+name: Pages
+
+on:
+  push:
+    branches: [master]
+  # So the site can be republished without a commit — useful when Pages itself is
+  # reconfigured, which does not rebuild anything on its own.
+  workflow_dispatch:
+
+# Read the repository, write an artifact, and prove to Pages that this workflow is the one
+# publishing. `id-token` is not optional: `deploy-pages` uses OIDC rather than a token.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time, and let a running one finish. Cancelling mid-deploy can leave
+# Pages serving a half-uploaded site, which is worse than being a minute out of date.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Build the browser distribution
+        run: ./gradlew :shared:wasmJsBrowserDistribution --no-daemon
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: shared/build/dist/wasmJs/productionExecutable
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

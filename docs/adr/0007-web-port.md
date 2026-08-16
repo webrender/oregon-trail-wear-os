@@ -87,15 +87,29 @@ copy twice.
 
 ### Art is fetched, not bundled
 
-20MB of PNGs. A browser that downloaded all of it before the title screen appeared would
-take most of a minute to show one picture, so each asset is fetched when a screen first
-asks for it and the browser's own HTTP cache makes the second visit free.
+A browser that downloaded the whole set before the title screen appeared would take most
+of a minute to show one picture, so each asset is fetched when a screen first asks for it
+and the browser's own HTTP cache makes the second visit free. (The set was 20MB when this
+was decided and is 3.9MB now — see the last consequence below — which makes the choice
+less load-bearing than it was, and still right: nothing needs the whole set.)
 
 The cost is that art can be *late*, which the watch's synchronous loader never is. That is
 what `ArtLoader.generation` is for: a Compose snapshot counter, bumped when a new asset
 lands, used as a `remember` key by every caller. Without it a `remember` that captured a
 null would keep it forever and the picture would never appear. It is a constant on the
 watch and nothing re-runs there.
+
+### Publishing
+
+A GitHub Actions workflow builds `wasmJsBrowserDistribution` on every push to `master` and
+deploys it to Pages. The output is already a self-contained static site and every URL in
+`index.html` is relative, so it works unchanged under the `/oregon-trail-wear-os/` path a
+project site is served from — nothing in the build knows the repository's name.
+
+The runners need the Android SDK even though nothing Android is built, because `:shared`
+applies `com.android.library` for its Wear OS target and AGP resolves an SDK during
+configuration, before it knows the only task requested is a wasm one. That is what fixes
+`compileSdk` at a level a runner can actually fetch.
 
 ### Saves go in `localStorage`
 
@@ -109,8 +123,10 @@ there is nothing to defend against: `setItem` either stores the whole string or 
 - **Kotlin 1.9.24 → 2.4.10, AGP 8.5.2 → 8.13.2, Compose Multiplatform 1.11.1.** Required:
   Kotlin/Wasm and Compose Multiplatform do not exist at the old versions. Wear Compose is
   pinned at 1.3.1 regardless, so the watch's widgets are unchanged.
-- **`compileSdk` 34 → 37**, which is what was installed alongside 34. The minimum is still
-  API 33.
+- **`compileSdk` 34 → 36.** Forced: the Compose that Compose Multiplatform 1.11 resolves
+  to on Android needs 35 or newer. 36 rather than the 37 this machine happens to have,
+  because 37 is a preview-numbered platform that a CI runner will not have and cannot
+  reliably fetch. The minimum is still API 33.
 - **The ~150 JVM unit tests did not move to `commonTest`.** They stayed as JUnit in the
   Android target's unit tests, which is the only target here with a JVM to run them on.
   Rewriting them against `kotlin.test` would have been churn with nothing to show.
@@ -120,8 +136,15 @@ there is nothing to defend against: `setItem` either stores the whole string or 
   and rendered as *nothing* in the browser, which has no fallback chain. They are now
   `–`, `•` and `·`, all of which Shaston has. `FontCoverageTest` scans the source and
   fails on any character the font cannot draw.
-- **The browser bundle is about 12MB before compression**, most of it Skia. That is the
-  price of Compose Multiplatform on the web and there is no version of this port that
-  avoids it.
+- **The browser bundle is about 11MB of wasm before compression**, most of it Skia. That
+  is the price of Compose Multiplatform on the web and there is no version of this port
+  that avoids it. The art beside it is 3.9MB and is fetched per asset, not up front.
+- **The browser is capped at 2x.** A full-bleed backdrop is authored to 820 pixels; 2x
+  asks 875 of it, a 7% upscale nobody sees, and 3x asks 1313, which is not. Raising the
+  cap means regenerating the art larger and paying for it on every download.
+- **The whole asset set was re-encoded as indexed PNG**, which the port paid for and the
+  watch benefits from more: 19.1MB to 3.9MB, and a release APK from 22MB to 5.9MB. See
+  `scripts/prepare-art.py`, which also records what the previous quantiser had been
+  silently doing to the map tiles.
 
 [`no-back-stack`]: 0004-unified-input-scheme.md
