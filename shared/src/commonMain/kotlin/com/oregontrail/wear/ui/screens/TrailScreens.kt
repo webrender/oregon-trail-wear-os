@@ -332,10 +332,10 @@ fun ConfirmAbandonScreen(controller: GameController) {
         Gap(6)
         MenuChip(
             label = "Yes, start over",
-            onClick = {
-                controller.abandonRun()
-                controller.startNewGame()
-            },
+            // Lands on the title screen rather than straight into profession select:
+            // giving up a run and committing to the next one are two decisions, and the
+            // second one deserves its own tap.
+            onClick = { controller.abandonRun() },
         )
     }
 }

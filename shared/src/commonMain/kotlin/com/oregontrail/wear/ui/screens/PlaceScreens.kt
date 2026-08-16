@@ -328,10 +328,9 @@ fun GameOverScreen(controller: GameController) {
             MenuChip(
                 label = "New Journey",
                 primary = true,
-                onClick = {
-                    controller.abandonRun()
-                    controller.startNewGame()
-                },
+                // Clears the finished run and returns to the title screen, which is
+                // where the next journey is chosen — see [ConfirmAbandonScreen].
+                onClick = { controller.abandonRun() },
             )
             Gap(6)
             MenuChip(label = "High Scores", onClick = { controller.showHighScores() })
@@ -350,10 +349,7 @@ fun GameOverScreen(controller: GameController) {
             MenuChip(
                 label = "New Journey",
                 primary = true,
-                onClick = {
-                    controller.abandonRun()
-                    controller.startNewGame()
-                },
+                onClick = { controller.abandonRun() },
             )
             Gap(6)
             // Offered here too, even though a lost party scores nothing. The table is
