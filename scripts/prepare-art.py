@@ -42,7 +42,7 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "art-source"
-DEST = ROOT / "app/src/main/assets/art"
+DEST = ROOT / "shared/src/androidMain/assets/art"
 
 ALPHA_FLOOR = 16
 
