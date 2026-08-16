@@ -41,6 +41,7 @@ import androidx.compose.ui.input.key.KeyEventType
 import androidx.compose.ui.input.key.key
 import androidx.compose.ui.input.key.onKeyEvent
 import androidx.compose.ui.input.key.type
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
 import androidx.compose.ui.platform.LocalDensity
@@ -98,8 +99,8 @@ private val WHEEL_NOTCH = 20.dp
  * caused was not subtle — one click of a real wheel reported 100, which at 20dp *each*
  * asked for 100 steps and slammed the food quantity from nothing to the 1,000lb ceiling in
  * a single detent. Dividing by it restores the intended relationship: one notch of wheel is
- * one detent of crown, which is one store step, one landmark on the map, and 20dp of a
- * scrolling list.
+ * one detent of crown, which is one store step, one landmark on the map, and
+ * [LIST_SCROLL_PER_NOTCH] of a scrolling list.
  *
  * Firefox is the known gap. It reports mouse wheels in *lines* (`deltaMode = 1`, about 3
  * per notch) rather than pixels, and nothing here can see `deltaMode` to tell the
@@ -124,14 +125,48 @@ private const val WHEEL_DELTA_PER_NOTCH = 100f
  * breaking the page, and the arrow keys deliberately ignore it: a key press is exactly one
  * detent by construction and has no device variation to compensate for.
  */
-private val wheelSensitivity: Float = run {
+private val wheelSensitivity: Float = urlFloat("wheel", default = 1f, max = 20f)
+
+/**
+ * How far one notch of wheel scrolls a *list*, as against how far it turns the crown.
+ *
+ * The one place the browser deliberately does not match the crown one-for-one, and it needs
+ * its own number rather than a fraction of [WHEEL_NOTCH] because it is not the same kind of
+ * quantity. A detent is the right quantum for a control that lands on something — a store
+ * step, a landmark — where you get discrete feedback confirming where you arrived. A list
+ * has nothing to land on, so the same impulse is only distance, and 20dp of it per notch
+ * would be a crawl.
+ *
+ * 30dp is a little under the ~39dp per notch that Compose's own built-in wheel scrolling
+ * was doing before this file took the events over, which is what "a teeny bit fast" was
+ * describing. Multiply it with `?scroll=` to taste.
+ *
+ * Only the two scrolling columns apply this. The store, the map and the raft keep the
+ * crown-equivalent calibration, which is also what keeps buying 1,000lb of food from taking
+ * fifty-odd notches of wheel.
+ */
+private val LIST_SCROLL_PER_NOTCH = 30.dp
+
+/** [LIST_SCROLL_PER_NOTCH] as a multiple of a detent, times the `?scroll=` tuning value. */
+private val listScrollRatio: Float =
+    (LIST_SCROLL_PER_NOTCH / WHEEL_NOTCH) * urlFloat("scroll", default = 1f, max = 4f)
+
+/**
+ * A tuning value from the query string, or [default] if it is absent or nonsense.
+ *
+ * These exist because both numbers can only be set by feel, and feel varies by pointing
+ * device — so the next person to find one wrong should be able to land on the value that
+ * suits them in a few seconds rather than by rebuilding 12MB of wasm. Read once, at
+ * startup; anything unparseable or out of range falls back rather than breaking the page.
+ */
+private fun urlFloat(name: String, default: Float, max: Float): Float {
     val requested = window.location.search
         .removePrefix("?")
         .split("&")
-        .firstOrNull { it.startsWith("wheel=") }
-        ?.removePrefix("wheel=")
+        .firstOrNull { it.startsWith("$name=") }
+        ?.removePrefix("$name=")
         ?.toFloatOrNull()
-    if (requested != null && requested > 0f && requested <= 20f) requested else 1f
+    return if (requested != null && requested > 0f && requested <= max) requested else default
 }
 
 /** Wear's `ScalingLazyColumn` shrinks and fades items away from the centre by about this
@@ -165,7 +200,10 @@ actual fun RotaryColumn(
         LazyColumn(
             modifier = modifier
                 .fillMaxSize()
-                .rotaryInput { pixels -> scope.launch { state.scrollBy(pixels) } },
+                // A list scrolls further per notch than a detent turns: [LIST_SCROLL_PER_NOTCH].
+                .rotaryInput { pixels ->
+                    scope.launch { state.scrollBy(pixels * listScrollRatio) }
+                },
             state = state,
             horizontalAlignment = Alignment.CenterHorizontally,
             // Half the display top and bottom, so the first and last rows can reach the
@@ -223,7 +261,10 @@ actual fun RotaryScrollColumn(
         Column(
             modifier = modifier
                 .fillMaxSize()
-                .rotaryInput { pixels -> scope.launch { scrollState.scrollBy(pixels) } }
+                // A list scrolls further per notch than a detent turns: [LIST_SCROLL_PER_NOTCH].
+                .rotaryInput { pixels ->
+                    scope.launch { scrollState.scrollBy(pixels * listScrollRatio) }
+                }
                 .verticalScroll(scrollState)
                 .padding(
                     start = horizontalPadding,
@@ -363,9 +404,21 @@ actual fun Modifier.rotaryInput(onScroll: (pixels: Float) -> Unit): Modifier {
     LaunchedEffect(Unit) { focusRequester.requestFocus() }
 
     return this
-        .onPointerEvent(PointerEventType.Scroll) { event ->
+        // `Initial`, and the changes are consumed, because on a scrolling list this is not
+        // the only handler. `LazyColumn` and `verticalScroll` bring their own mouse-wheel
+        // support, it runs on the `Main` pass — which for pointer input reaches the inner
+        // node *first* — and it is not adjustable. Handling on `Main` therefore left the
+        // built-in scrolling in charge and made every constant here inert on exactly the
+        // screens where it was being tuned: damping the list to a hundredth changed
+        // nothing at all, which is how this was found. Taking the event on `Initial` and
+        // consuming it puts the rate back under this file's control on every screen
+        // equally. Drag is untouched — only `Scroll` events are claimed.
+        .onPointerEvent(PointerEventType.Scroll, pass = PointerEventPass.Initial) { event ->
             val delta = event.changes.fold(0f) { sum, change -> sum + change.scrollDelta.y }
-            if (delta != 0f) onScroll(delta / WHEEL_DELTA_PER_NOTCH * notch * wheelSensitivity)
+            if (delta != 0f) {
+                event.changes.forEach { it.consume() }
+                onScroll(delta / WHEEL_DELTA_PER_NOTCH * notch * wheelSensitivity)
+            }
         }
         .onKeyEvent { event ->
             if (event.type != KeyEventType.KeyDown) return@onKeyEvent false
