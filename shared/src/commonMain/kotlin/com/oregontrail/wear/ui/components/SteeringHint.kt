@@ -8,12 +8,13 @@ package com.oregontrail.wear.ui.components
  * its browser stand-in are interchangeable enough to go unmentioned: a menu scrolls, and
  * how you made it scroll does not need saying. The raft is different because it is the
  * only screen with a control scheme of its own, and the briefing that explains it is the
- * whole reason a first descent is not a wreck. "Crown steers." is useless at a keyboard.
+ * whole reason a first descent is not a wreck. "Crown steers." is useless at a keyboard,
+ * and "Arrows or wheel." is useless holding a phone.
  *
- * Both wordings live here rather than one in each platform's source, so that
- * `SteeringHintTest` can measure both against the display. The one that matters is the
- * one the *other* platform's tests cannot see, which is exactly the string that would
- * otherwise be checked by nobody.
+ * All three wordings live here rather than one in each platform's source, so that
+ * `SteeringHintTest` can measure them all against the display. The ones that matter are
+ * the ones the *other* platform's tests cannot see, which are exactly the strings that
+ * would otherwise be checked by nobody.
  */
 object SteeringHints {
 
@@ -27,7 +28,17 @@ object SteeringHints {
      * first attempt and did exactly that.
      */
     const val KEYBOARD = "Arrows or wheel."
+
+    /**
+     * The browser on a touchscreen, where neither of the above exists: no wheel, and no
+     * keyboard, because nothing in this game ever asks for text and so nothing ever raises
+     * one. Named separately rather than added to [KEYBOARD] because a phone player reading
+     * "Arrows or wheel." concludes the game is unplayable and closes the tab, which is
+     * exactly what happened.
+     */
+    const val TOUCH = "Drag to steer."
 }
 
-/** Whichever of [SteeringHints] this build is being played with. */
+/** Whichever of [SteeringHints] this build is being played with, on whatever it is being
+ *  played on. */
 expect val steeringHint: String

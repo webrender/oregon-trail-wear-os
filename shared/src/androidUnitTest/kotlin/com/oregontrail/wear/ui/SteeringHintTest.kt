@@ -15,9 +15,9 @@ import java.io.File
  * have to scroll is one you skip — which on the one screen in the game with a control
  * scheme of its own means learning it by wrecking.
  *
- * Both platforms' wordings are checked, because the browser's is the one no other test on
- * this classpath can see. "Arrows or wheel steer." was the first attempt at it, at 316px
- * against a 275px line, and it wrapped exactly as described.
+ * All three wordings are checked, because the browser's two are the ones no other test on
+ * this classpath can see. "Arrows or wheel steer." was the first attempt at one of them, at
+ * 316px against a 275px line, and it wrapped exactly as described.
  */
 class SteeringHintTest {
 
@@ -30,8 +30,8 @@ class SteeringHintTest {
      * padding either side — 160dp of the watch's 192 — and `ScreenText` then takes 0.86
      * of that to keep its ends off the curve. At density 2 that is 275 pixels.
      *
-     * The browser is the same 192dp screen at a whole-number magnification, so the budget
-     * is the same there in every unit that matters. See `Main.kt`.
+     * The browser is the same 192dp screen, whatever it is magnified by, so the budget is
+     * the same there in every unit that matters. See `Main.kt`.
      */
     private val budgetPx = (192 - 32) * 0.86 * 2
 
@@ -39,8 +39,8 @@ class SteeringHintTest {
     private val captionPx = 16.0
 
     @Test
-    fun `both steering hints fit on one line`() {
-        for (hint in listOf(SteeringHints.CROWN, SteeringHints.KEYBOARD)) {
+    fun `every steering hint fits on one line`() {
+        for (hint in listOf(SteeringHints.CROWN, SteeringHints.KEYBOARD, SteeringHints.TOUCH)) {
             val width = font.widthPx(hint, captionPx)
             assertTrue(
                 "\"$hint\" is ${width.toInt()}px wide against a ${budgetPx.toInt()}px line — " +

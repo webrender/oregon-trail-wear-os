@@ -40,7 +40,7 @@ Three things were considered and rejected on the way:
 ### The screen stays 192dp round
 
 The browser gets a 192dp circular display — the Pixel Watch 2's, exactly — centred in a
-bezel, magnified by a whole number to fill the window. Not a responsive layout.
+bezel, magnified to fill the window. Not a responsive layout.
 
 Everything about this game is a consequence of a 1.2" circle: three type sizes because a
 bitmap font has no sizes in between, an eleven-character chip label budget, a `Back` chip
@@ -49,12 +49,35 @@ authored at 150x96 so the bezel can crop their corners. A version that filled a 
 screen would keep the artwork and discard the design, and would be a worse advertisement
 for the project than a screenshot.
 
-The magnification is a **whole number** — 1x, 2x, 3x — because the type is pinned to the
-pixel grid: Shaston's 8-pixel cell is one em, so text is only crisp at font sizes that are
-whole multiples of 8 device pixels (see `ui/theme/Typography.kt`). At 2.5x every glyph
+The magnification **prefers a whole number** — 1x, 2x, 3x — because the type is pinned to
+the pixel grid: Shaston's 8-pixel cell is one em, so text is only crisp at font sizes that
+are whole multiples of 8 device pixels (see `ui/theme/Typography.kt`). At 2.5x every glyph
 edge lands between pixels and the font turns to the grey mush the whole art style exists
-to avoid. The window is letterboxed around whichever step fits, which is what the bezel is
-for.
+to avoid.
+
+*Amended 2026-08-17.* Whole numbers **only** was the original rule, and it made the port
+look bad on the devices most people were opening it on. The steps are 384 device pixels
+apart, and a window is very often most of the way to the next one: a 360-CSS-pixel phone at
+device pixel ratio 2 has 720 pixels, takes the 1x step, and draws a watch across half its
+width. A 1964-pixel laptop window was stranded at 768 by a further cap that held the
+magnification at 2x to keep the art sharp. Both read as a small picture on a big black
+page, which is not what the bezel was for.
+
+So the whole number is now preferred rather than required: it is taken when it leaves no
+more than a tenth of the shorter side unused, and otherwise the watch is magnified to fit
+exactly. Two things make the fraction cheap where it is reached for. `cellStyle` rounds the
+cell back down to whole pixels, so the glyphs stay on the grid even when their origins do
+not. And the windows small enough to need a fraction are overwhelmingly phones at device
+pixel ratio 2 or 3, where half a device pixel is a sixth of a CSS pixel; a desktop at ratio
+1, where the grid is visible, has a window big enough that a whole number is nearly always
+within the slack.
+
+The 2x cap is gone with it, and the art is what pays: `prepare-art.py` keeps each asset at
+the largest size a *watch* draws it plus half again, so a full-bleed backdrop is 820 pixels
+and is visibly soft above about a 768-pixel screen. That is the accepted cost of the watch
+being the size of the window rather than a third of it — the type, which is a font and not
+a bitmap, stays crisp all the way up. Regenerating the art from the masters at a larger cap
+would fix the rest, at the price of those pixels on every download.
 
 Density follows from the magnification rather than from the browser: at 2x the watch, the
 density is 4, and the screen is still 192dp. Every layout above that line measures exactly
@@ -62,7 +85,7 @@ what it measures on the wrist, and simply gets more pixels to be drawn with.
 
 ### What is `expect`/`actual`, and what isn't
 
-The list is deliberately short, and its length is the health check on this decision. Eight
+The list is deliberately short, and its length is the health check on this decision. Nine
 declarations:
 
 | Declaration | Watch | Browser |
@@ -71,6 +94,7 @@ declarations:
 | `RotaryScrollColumn` | `Scaffold` + `PositionIndicator` | `Column` + a hand-drawn `ScrollArc` |
 | `MenuChip`, `CompactActionChip`, `StepperButton` | Wear `Chip`/`CompactChip`/`Button` | the same shapes redrawn from `AppleII`'s palette |
 | `Modifier.rotaryInput` | `onRotaryScrollEvent` + a focus request | wheel, arrow keys |
+| `Modifier.horizontalDragInput` | nothing — the gesture is the system dismiss | a drag, which on a phone is the only control there is |
 | `OregonTrailTheme`, `shastonFontFamily` | Wear `MaterialTheme`, a font asset | nothing, and a fetched `.ttf` |
 | `ArtLoader` | `BitmapFactory` over the APK's assets | `fetch` plus Skia |
 | `displayWidthPx` | the device's real width | the simulated watch's |
@@ -141,9 +165,19 @@ there is nothing to defend against: `setItem` either stores the whole string or 
 - **The browser bundle is about 11MB of wasm before compression**, most of it Skia. That
   is the price of Compose Multiplatform on the web and there is no version of this port
   that avoids it. The art beside it is 3.9MB and is fetched per asset, not up front.
-- **The browser is capped at 2x.** A full-bleed backdrop is authored to 820 pixels; 2x
+- ~~**The browser is capped at 2x.** A full-bleed backdrop is authored to 820 pixels; 2x
   asks 875 of it, a 7% upscale nobody sees, and 3x asks 1313, which is not. Raising the
-  cap means regenerating the art larger and paying for it on every download.
+  cap means regenerating the art larger and paying for it on every download.~~ *Removed
+  2026-08-17*: the cap made the game a postage stamp on a laptop and on a phone, which
+  costs more than the softness does. The art is now upscaled above 2x, and regenerating it
+  larger remains the way to fix that. See the amendment above.
+- **A phone can play it, which it could not.** Every menu in the game is a list and every
+  choice is a chip, so touch always worked — apart from the two screens that are neither.
+  The map and the rafting descent were driven by the crown's browser stand-ins, and a
+  device with no wheel and no arrow keys could not steer the raft at all. Both now take a
+  horizontal drag, which is free in a browser and impossible on the watch (ADR 0004: the
+  gesture is the system dismiss). The briefing's control line asks `pointer: coarse` and
+  says "Drag to steer." where it applies.
 - **The whole asset set was re-encoded as indexed PNG**, which the port paid for and the
   watch benefits from more: 19.1MB to 3.9MB, and a release APK from 22MB to 5.9MB. See
   `scripts/prepare-art.py`, which also records what the previous quantiser had been

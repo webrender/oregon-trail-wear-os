@@ -78,8 +78,8 @@ fun StoreScreen(controller: GameController) {
  * How much crown travel advances the quantity by one step.
  *
  * In dp rather than raw pixels. The crown reports device pixels, and 40 of them was the
- * right feel on a density-2 watch — but the browser build magnifies the whole display by
- * a whole number and raises the density to match (see `Main.kt`), so a raw-pixel constant
+ * right feel on a density-2 watch — but the browser build magnifies the whole display to
+ * fit the window and raises the density to match (see `Main.kt`), so a raw-pixel constant
  * would step twice as fast at 2x as at 1x. 20dp is those same 40 pixels on the watch and
  * the same *feel* everywhere else.
  */

@@ -4,6 +4,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,8 +28,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
@@ -44,6 +47,7 @@ import androidx.compose.ui.input.key.type
 import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.onPointerEvent
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
@@ -431,4 +435,34 @@ actual fun Modifier.rotaryInput(onScroll: (pixels: Float) -> Unit): Modifier {
         }
         .focusRequester(focusRequester)
         .focusable()
+}
+
+/**
+ * The finger, which on a phone is the only control there is.
+ *
+ * Neither of the two stand-ins above exists on a touchscreen: there is no wheel, and the
+ * on-screen keyboard never opens because nothing on any screen takes text. That leaves the
+ * raft and the map — the two screens that are not lists — with no control at all, which is
+ * how the browser build was shipped and how it was played on a phone exactly once.
+ *
+ * Horizontal, and only horizontal, so that this is safe to have on the same screens the
+ * lists are on. A vertical drag is how a list scrolls, and `LazyColumn` claims it; taking
+ * the sideways axis and leaving that one alone means the two never argue about a diagonal.
+ * The drag is consumed so that a `Modifier.clickable` under it — the map's tap-to-leave —
+ * does not also fire when the finger comes up.
+ */
+@Composable
+actual fun Modifier.horizontalDragInput(onDrag: (pixels: Float) -> Unit): Modifier {
+    // The gesture detector is started once and outlives every recomposition, so the lambda
+    // it captured would be the first one forever. That happens to be harmless for both of
+    // this modifier's callers — they write to remembered state, which is the same object
+    // each time — and it is the sort of harmless that stops being true the moment a third
+    // caller closes over something else.
+    val current by rememberUpdatedState(onDrag)
+    return this.pointerInput(Unit) {
+        detectHorizontalDragGestures { change, dragAmount ->
+            change.consume()
+            current(dragAmount)
+        }
+    }
 }

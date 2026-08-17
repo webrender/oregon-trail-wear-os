@@ -240,3 +240,14 @@ actual fun Modifier.rotaryInput(onScroll: (pixels: Float) -> Unit): Modifier {
         .focusRequester(focusRequester)
         .focusable()
 }
+
+/**
+ * Nothing, on the watch.
+ *
+ * Not an omission and not a to-do. A horizontal drag on Wear OS is the system dismiss
+ * gesture, so claiming one here would mean a control whose own direction can end the run —
+ * which is how the raft's original drag fallback was lost. The crown is the control; see
+ * the declaration in `commonMain` and ADR 0004.
+ */
+@Composable
+actual fun Modifier.horizontalDragInput(onDrag: (pixels: Float) -> Unit): Modifier = this

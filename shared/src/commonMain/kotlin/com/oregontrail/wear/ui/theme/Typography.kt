@@ -45,13 +45,14 @@ private const val CELL_HEIGHT_PX = 8
  * in this file is pinned to whole device pixels (see [cellStyle]), which is exactly right
  * on a 384-pixel display held at arm's length and exactly wrong in a 1400-pixel browser
  * window, where the same text would be a quarter of the size relative to the screen it
- * sits on. The web build magnifies the whole watch by a whole number and reports it here,
- * so the type scales with everything else instead of shrinking into the middle of it.
+ * sits on. The web build magnifies the whole watch and reports the factor here, so the
+ * type scales with everything else instead of shrinking into the middle of it.
  *
- * Whole numbers only. A fractional magnification would put the cell back off the pixel
- * grid, which is the one thing this entire file exists to prevent.
+ * A whole number where the window affords one, and fractional where it does not — see
+ * `Main.kt`, which explains why filling the window is worth the fraction. [cellStyle]
+ * absorbs the difference by rounding the cell itself back onto the pixel grid.
  */
-val LocalWatchScale = staticCompositionLocalOf { 1 }
+val LocalWatchScale = staticCompositionLocalOf { 1f }
 
 /**
  * The platform's own say in how a line box is measured, which only Android has one of.
@@ -65,7 +66,7 @@ val LocalWatchScale = staticCompositionLocalOf { 1 }
 internal expect val cellPlatformStyle: PlatformTextStyle?
 
 /**
- * A text style at a whole-number magnification of the original character cell.
+ * A text style at a whole-number multiple of the original character cell.
  *
  * The font declares 800 units per em with an ascent of 700 and a descent of -100, which
  * puts the 8-pixel cell at exactly one em — so **one source pixel is one eighth of the
@@ -80,11 +81,18 @@ internal expect val cellPlatformStyle: PlatformTextStyle?
  * pins the result through both. The cost is that this text does not honour the system
  * font-size preference — accepted because at 1x the cell is 8 pixels tall and unreadable
  * on a watch, so the only available sizes are these three anyway.
+ *
+ * The magnification is rounded *down* to a whole pixel rather than to the nearest one.
+ * That matters only in the browser, where [LocalWatchScale] can be fractional, and it is
+ * the direction that cannot break anything: the layout around this text is measured in dp
+ * and scales smoothly, so a cell rounded up would let a line grow past a budget worked out
+ * on the watch — an 11-character chip label silently becoming a 10-character one plus an
+ * ellipsis. Rounding down costs at most a pixel of height on a cell that is 16 or more.
  */
 @Composable
 fun cellStyle(scale: Int): TextStyle {
     val density = LocalDensity.current
-    val pixels = CELL_HEIGHT_PX * scale * LocalWatchScale.current
+    val pixels = (CELL_HEIGHT_PX * scale * LocalWatchScale.current).toInt()
     return TextStyle(
         fontFamily = shastonFontFamily(),
         fontWeight = FontWeight.Normal,

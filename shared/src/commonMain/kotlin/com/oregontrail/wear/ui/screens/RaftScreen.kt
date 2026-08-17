@@ -20,6 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import com.oregontrail.wear.ui.components.horizontalDragInput
 import com.oregontrail.wear.ui.components.rotaryInput
 import com.oregontrail.wear.ui.art.displayWidthPx
 import androidx.compose.ui.platform.LocalDensity
@@ -274,10 +275,16 @@ private data class Drifter(val x: Int, val y: Float)
  * which is the shape of the 1985 original — see docs/reference/game-mechanics-1985.md,
  * where the rest of that design and the two faults worth fixing are written up. The
  * crown steers rather than a d-pad, per ADR 0004: a finger on this screen covers the
- * rocks it is trying to miss. It is also the only steering there is — a horizontal drag
- * used to work as a fallback, but steering right is the system dismiss gesture, so the
- * fallback's own direction could end the run, and an interrupted descent is a run that
+ * rocks it is trying to miss. On the watch it is the only steering there is — a horizontal
+ * drag used to work as a fallback, but steering right is the system dismiss gesture, so
+ * the fallback's own direction could end the run, and an interrupted descent is a run that
  * never happened.
+ *
+ * The browser has no dismiss gesture to collide with, so the drag comes back there and is
+ * the only control a phone has — see `Modifier.horizontalDragInput`. The objection about a
+ * finger covering the rocks is real but much smaller off the wrist: the screen that is
+ * 1.2" across on a watch is the full width of a phone, so a thumb held at the bottom of it
+ * is nowhere near the water a rock is arriving in.
  *
  * Collisions are *graded* here, which is the fix for the original's flattest edge: how
  * far the raft's box overlaps the rock's decides whether the river calls it a graze or a
@@ -490,6 +497,13 @@ private fun RaftRun(controller: GameController) {
             .background(AppleII.Black)
             .rotaryInput { pixels ->
                 raftX += pixels / pixelsPerUnit * STEER_GAIN
+            }
+            // At gain 1, where the crown is at 0.6 — a drag is direct manipulation and the
+            // raft goes where the finger goes, which is the whole reason a touchscreen is
+            // worth having here. Damping it would put the raft behind the finger, and a
+            // pilot chasing his own hand is worse than no touch control at all.
+            .horizontalDragInput { pixels ->
+                raftX += pixels / pixelsPerUnit
             },
     ) {
         Scene(

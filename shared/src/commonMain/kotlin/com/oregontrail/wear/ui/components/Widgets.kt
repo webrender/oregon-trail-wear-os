@@ -134,3 +134,25 @@ expect fun StepperButton(
  */
 @Composable
 expect fun Modifier.rotaryInput(onScroll: (pixels: Float) -> Unit): Modifier
+
+/**
+ * A horizontal drag, reported in device pixels, on the platforms that have one to spare.
+ *
+ * This is the touchscreen's answer to the two screens that steer or scrub rather than
+ * scroll — the rafting descent and the map. Everything else in the game is a list or a
+ * chip: a list scrolls under a finger without being asked to, and a chip is a tap. Those
+ * two are the only places where a browser with no keyboard and no wheel — which is to say
+ * a phone — is left holding a screen it cannot work at all.
+ *
+ * **It does nothing on the watch, and that is the point.** A right swipe there never
+ * reaches the app: it is the Wear OS system dismiss gesture, and it kills the activity.
+ * The raft used to accept a horizontal drag as a fallback and lost runs to exactly that —
+ * see the note on `RaftScreen`. So the gesture is claimed where it is free and declined
+ * where it is not, rather than being written once and hoped about. ADR 0004 states the
+ * rule this is the other half of: no gesture on the watch is horizontal.
+ *
+ * Pixels, and not scene units or list rows, so that a caller can put a drag and
+ * [rotaryInput] through the same arithmetic and have both calibrated by the same constant.
+ */
+@Composable
+expect fun Modifier.horizontalDragInput(onDrag: (pixels: Float) -> Unit): Modifier

@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
+import com.oregontrail.wear.ui.components.horizontalDragInput
 import com.oregontrail.wear.ui.components.rotaryInput
 import com.oregontrail.wear.ui.art.displayWidthPx
 import androidx.compose.ui.platform.LocalDensity
@@ -131,11 +132,17 @@ private val WAGON = 20.dp
 /**
  * The trail map: the whole continent as one strip, scrubbed along with the crown.
  *
- * There is no panning by touch. A right swipe is never delivered to this app — it hits the
- * Wear OS dismiss gesture and ends the run — so horizontal drag is the one gesture that
- * cannot be claimed, and a pannable map claims exactly it. The trail is a path rather than
- * a plane anyway, so one axis is all there is to scrub: the crown steps from landmark to
- * landmark and the country slides past underneath. Tapping anywhere goes back.
+ * There is no panning by touch *on the watch*. A right swipe is never delivered to the app
+ * there — it hits the Wear OS dismiss gesture and ends the run — so horizontal drag is the
+ * one gesture that cannot be claimed, and a pannable map claims exactly it. The trail is a
+ * path rather than a plane anyway, so one axis is all there is to scrub: the crown steps
+ * from landmark to landmark and the country slides past underneath. Tapping anywhere goes
+ * back.
+ *
+ * In a browser the drag is free and this screen is otherwise unusable without a keyboard,
+ * so it is taken — see `Modifier.horizontalDragInput`, which is a no-op on the watch. The
+ * tap survives it: the drag consumes its own events, so a finger that moved leaves without
+ * also being read as the tap that goes back.
  *
  * See docs/adr/0006-map-screen.md.
  */
@@ -174,23 +181,34 @@ fun MapScreen(controller: GameController) {
         ArtLoader.loadOrNull(ArtNames.MAP_WAGON, wagonEdgePx)
     }
 
+    // A detent's worth of winding steps one landmark, whether the winding came from the
+    // crown or from a finger. Written once because the two must agree: [DETENT] is what
+    // ADR 0006 calibrated the map's pace against, and a second copy of that arithmetic is
+    // a second thing to get wrong.
+    fun wind(pixels: Float) {
+        turned += pixels
+        while (turned >= detentPx && selected < stops.lastIndex) {
+            selected++
+            turned -= detentPx
+        }
+        while (turned <= -detentPx && selected > 0) {
+            selected--
+            turned += detentPx
+        }
+        // Both ends of the trail refuse to step further, and without this the winding
+        // would bank up against them — a dozen turns past Oregon City would then take a
+        // dozen back before the map moved at all.
+        turned = turned.coerceIn(-detentPx, detentPx)
+    }
+
     StaticScreen(
         modifier = Modifier
-            .rotaryInput { pixels ->
-                turned += pixels
-                while (turned >= detentPx && selected < stops.lastIndex) {
-                    selected++
-                    turned -= detentPx
-                }
-                while (turned <= -detentPx && selected > 0) {
-                    selected--
-                    turned += detentPx
-                }
-                // Both ends of the trail refuse to step further, and without this the
-                // winding would bank up against them — a dozen turns past Oregon City
-                // would then take a dozen back before the map moved at all.
-                turned = turned.coerceIn(-detentPx, detentPx)
-            }
+            .rotaryInput { pixels -> wind(pixels) }
+            // Negated, because a drag is the country and not the crown: dragging left
+            // pulls the map west, which is forwards along the trail. The alternative reads
+            // as the map moving the wrong way, which is the one thing a scrubbable strip
+            // is not allowed to do.
+            .horizontalDragInput { pixels -> wind(-pixels) }
             .clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,

@@ -27,6 +27,7 @@ import com.oregontrail.wear.ui.OregonTrailApp
 import com.oregontrail.wear.ui.theme.AppleII
 import com.oregontrail.wear.ui.theme.LocalWatchScale
 import com.oregontrail.wear.ui.theme.installShaston
+import com.oregontrail.wear.ui.theme.watchScaleFor
 import kotlinx.browser.document
 import kotlinx.browser.window
 import kotlinx.coroutines.CoroutineScope
@@ -48,13 +49,43 @@ import org.w3c.fetch.Response
  * scene aspect ratio, the choice to put a `Back` chip on screen because there is no back
  * gesture. Reflowing it into a browser window would keep none of that and would not be
  * the same game. So the browser gets the same 192dp round screen the watch has, magnified
- * by a whole number to fill the window.
+ * to fill the window.
  *
- * A *whole* number, because the type is pinned to the pixel grid — see
- * `ui/theme/Typography.kt`. Magnify by 2.5 and every glyph edge lands between pixels and
- * the font turns to grey mush, which is the one failure this art style cannot absorb. So
- * the watch grows in steps: 384 device pixels, then 768, then 1152. The window is
- * letterboxed around whichever step fits, which is why there is a bezel.
+ * ### The magnification is a whole number where one fits, and otherwise it is not
+ *
+ * A whole number is what the type wants: it is pinned to the pixel grid — see
+ * `ui/theme/Typography.kt` — and at 2.5x a glyph's advances land between pixels, where the
+ * rasteriser antialiases them.
+ *
+ * Whole numbers *only* was the original rule, and it was wrong for a reason that does not
+ * show up on a desktop: the steps are 384 device pixels apart, and a window is very often
+ * most of the way to the next one. A 360-CSS-pixel phone at device pixel ratio 2 has 720
+ * pixels to play with, takes the 1x step, and draws a watch across half its width with the
+ * rest of the page black — which is the whole of the "it's tiny on my phone" complaint.
+ * The same arithmetic strands a 1964-pixel laptop window at 768.
+ *
+ * So the whole number is *preferred* rather than required: it is taken when it leaves no
+ * more than a tenth of the shorter side unused, and otherwise the watch is magnified
+ * to fit exactly. Two things make the fraction cheap when it is reached for. The cell size
+ * is rounded back to whole pixels by `cellStyle`, so the glyphs themselves stay on the
+ * grid even when their origins do not. And the windows that need a fraction are the small
+ * ones, which in 2026 are overwhelmingly phones at device pixel ratio 2 or 3, where half a
+ * device pixel is a sixth of a CSS pixel and invisible. A desktop at ratio 1 — where the
+ * grid is visible — has a window big enough that a whole number is nearly always within
+ * the slack.
+ *
+ * ### What filling the window costs
+ *
+ * The art, above about 2x. `scripts/prepare-art.py` caps each asset at the largest size it
+ * is ever drawn on a *watch* plus half again of headroom — 820 pixels for a full-bleed
+ * backdrop, which covers the display and overshoots it by about 1.14x. So a 768-pixel
+ * watch asks for 875 and is a 7% upscale nobody can see, and a 1920-pixel one asks for
+ * 2189 and is soft. There used to be a cap here holding the magnification at 2x for
+ * exactly that reason, and it was the wrong trade: a sharp watch occupying a third of a
+ * laptop screen is not what anyone opens the page to look at. The type — which is a font
+ * rather than a bitmap, and is what the game is mostly made of — stays crisp all the way
+ * up. Regenerating the art from the masters at a larger cap would fix the rest of it, at
+ * the price of those pixels on every download.
  *
  * ### Why the density is overridden
  *
@@ -104,11 +135,7 @@ fun main() {
 private fun Watch(controller: GameController) {
     val available = LocalWindowInfo.current.containerSize
     val shortest = minOf(available.width, available.height)
-
-    // How many times the watch fits in the window, floored, never below one. A window too
-    // small for even 1x gets 1x and clips, which is the right failure: the alternative is
-    // a fractional scale that makes the text unreadable rather than merely cropped.
-    val scale = (shortest / WATCH_PIXELS).coerceIn(1, MAX_SCALE)
+    val scale = watchScaleFor(shortest)
 
     Box(
         modifier = Modifier.fillMaxSize().background(BEZEL),
@@ -135,25 +162,9 @@ private fun Watch(controller: GameController) {
     }
 }
 
-/** The Pixel Watch 2's screen: 384 device pixels across 192dp, so density 2. */
-private const val WATCH_PIXELS = 384
+/** The Pixel Watch 2's screen is 192dp across 384 device pixels, so density 2. */
 private const val WATCH_DP = 192
 private const val WATCH_DENSITY = 2f
-
-/**
- * The largest the watch is drawn, and the limit is the art rather than the window.
- *
- * `scripts/prepare-art.py` caps each asset at the biggest size it is ever drawn on a
- * *watch*, plus half again of headroom — 820 pixels for a full-bleed backdrop. A backdrop
- * covers the display and overshoots it by about 1.14x, so 2x (a 768-pixel screen) asks for
- * 875 and is a 7% upscale nobody can see. 3x would ask for 1313 from the same 820 and be a
- * 60% upscale, which on art this soft-edged is very visible indeed.
- *
- * A 768-pixel watch in a 1400-pixel window looks like a watch, which is the intent. Raising
- * this means regenerating the art from the masters at a larger cap, and paying for those
- * pixels on every download.
- */
-private const val MAX_SCALE = 2
 
 private val BEZEL = Color(0xFF0A0A0A)
 private val BEZEL_EDGE = Color(0xFF1E1E1E)
