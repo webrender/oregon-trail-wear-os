@@ -8,7 +8,7 @@
         /*
          * The page is the bezel's surround and nothing else. Everything visible is drawn
          * by Compose into the canvas below — see Main.kt, which puts a 192dp round screen
-         * in the middle of it at a whole-number magnification.
+         * in the middle of it, magnified to fill whichever way round the window is.
          */
         html, body {
             margin: 0;
@@ -20,6 +20,14 @@
             /* The game reads every arrow key. Letting the page scroll on them too would
                shift the canvas out from under the pointer while the map is being scrubbed. */
             overscroll-behavior: none;
+            /* The browser gets no touch gestures at all — not a pan, not a pinch, not a
+               swipe-to-navigate. The raft is steered by dragging across this page (see
+               `Modifier.horizontalDragInput`), and every one of those gestures is something
+               a browser would rather do with that drag than give it to the game. This is
+               also what turns off pinch-zoom, which is fine and deliberate: there is one
+               canvas here and it already sizes itself to the window, so there is nothing
+               a zoom could reveal. */
+            touch-action: none;
         }
 
         /* No text selection anywhere: a drag across a menu is a scroll, not a selection,
@@ -28,6 +36,9 @@
             user-select: none;
             -webkit-user-select: none;
             cursor: default;
+            /* Mobile Safari and Chrome paint a grey flash over whatever was tapped. On a
+               canvas that is the whole game, so the flash is the whole screen. */
+            -webkit-tap-highlight-color: transparent;
         }
 
         #loading {

@@ -11,9 +11,10 @@ control, and pixel-art asset here is original, hand-fit to a 1.2" circular displ
 **[Play it in a browser →](https://webrender.net/oregon-trail-wear-os/)**
 
 It also runs on the web, compiled to WebAssembly. Same code, same 192dp round screen,
-magnified and set in a bezel — the mouse wheel turns the crown, and the arrow keys steer
-the raft. See [ADR 0007](docs/adr/0007-web-port.md) for why it simulates the watch rather
-than reflowing for a window.
+magnified to fill the window and set in a bezel — the mouse wheel turns the crown, the
+arrow keys steer the raft, and on a phone you drag it. See
+[ADR 0007](docs/adr/0007-web-port.md) for why it simulates the watch rather than reflowing
+for a window.
 
 Personal project, built for and tested on a Pixel Watch 2. Sideload-only; not published
 to the Play Store (see [ADR 0002](docs/adr/0002-sideload-only-distribution.md)).
