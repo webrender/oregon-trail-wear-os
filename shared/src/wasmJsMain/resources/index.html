@@ -15,8 +15,24 @@
             padding: 0;
             width: 100%;
             height: 100%;
+            /* `dvh` and not `%`, on the phones this port exists for. A percentage height
+               resolves against the *large* viewport — the one a mobile browser has with its
+               address bar rolled away — so with the bar on screen the page, and therefore
+               Compose's container and its canvas, is a bar's height taller than anything you
+               can see. The watch is centred in that taller box and so sits low, with its
+               bottom edge behind the toolbar. `dvh` follows the viewport that is actually
+               visible. Nothing here scrolls, so the bar never hides and this never animates:
+               the dynamic unit is simply the correct one to measure against. `%` stays above
+               it for browsers that have no `dvh`. */
+            height: 100dvh;
             overflow: hidden;
             background: #000;
+            /* Compose's canvas is an inline element, so it sits on a text baseline and the
+               line box reserves room for descenders under it — five pixels of page taller
+               than the window, hidden here only by `overflow: hidden`. The canvas lives in a
+               shadow root that this stylesheet cannot select into, but `line-height` is
+               inherited and crosses the boundary, so setting it here is what reaches it. */
+            line-height: 0;
             /* The game reads every arrow key. Letting the page scroll on them too would
                shift the canvas out from under the pointer while the map is being scrubbed. */
             overscroll-behavior: none;

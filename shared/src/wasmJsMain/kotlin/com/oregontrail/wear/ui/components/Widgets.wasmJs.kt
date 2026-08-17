@@ -35,7 +35,6 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.graphicsLayer
@@ -70,6 +69,25 @@ import kotlin.math.abs
  * spacing — so that the copy budget worked out on the watch (see
  * `docs/` and the notes on `MenuChip`) is the same budget here. Changing them would make
  * the two builds disagree about what fits, and the watch is the one with no room to spare.
+ *
+ * ### Rounded shapes are drawn, not clipped
+ *
+ * Every widget below takes its shape from `Modifier.background(colour, shape)` rather than
+ * from the more usual `Modifier.clip(shape)` and a flat background under it. The two are the
+ * same picture and are not the same work.
+ *
+ * `Main.kt` wraps the whole display in `clip(CircleShape)`, so a chip that reaches the edge
+ * of the screen used to be a rounded-rect clip *nested inside* a rounded-rect clip. Skia
+ * carries one analytic rounded rect in the clip stack and has to fall back to a rasterised
+ * mask for a second one, and that fallback is where a GPU can disagree with itself: the
+ * reported symptom — a chip losing its bottom-left corner to a straight diagonal, and the
+ * bezel losing a bite out of its lower left — is what a mask that has gone wrong looks like.
+ * It has not been reproduced in software rendering, so this is a narrowing rather than a
+ * proven fix; what it does prove is that the second clip was never needed.
+ *
+ * Drawing the shape leaves exactly one clip in the stack — the circle — with an ordinary
+ * rounded rect drawn into it. Nothing here has content that overflows its own background,
+ * so the clip was buying nothing else.
  */
 
 private val CHIP_HEIGHT = 52.dp
@@ -314,8 +332,8 @@ actual fun MenuChip(
         modifier = modifier
             .fillMaxWidth()
             .defaultMinSize(minHeight = CHIP_HEIGHT)
-            .clip(RoundedCornerShape(CHIP_CORNER))
-            .background(background)
+            // Shaped background rather than `clip`: see the note at the top of this file.
+            .background(background, RoundedCornerShape(CHIP_CORNER))
             .clickable(enabled = enabled, onClick = onClick)
             .padding(horizontal = CHIP_PADDING, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -352,8 +370,8 @@ actual fun CompactActionChip(
     Box(
         modifier = modifier
             .defaultMinSize(minHeight = 32.dp)
-            .clip(RoundedCornerShape(16.dp))
-            .background(AppleII.Green)
+            // Shaped background rather than `clip`: see the note at the top of this file.
+            .background(AppleII.Green, RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
             .padding(horizontal = 12.dp, vertical = 4.dp),
         contentAlignment = Alignment.Center,
@@ -372,8 +390,11 @@ actual fun StepperButton(
     Box(
         modifier = modifier
             .size(BUTTON_SIZE)
-            .clip(CircleShape)
-            .background(if (enabled) AppleIIChrome.DimGreen else AppleIIChrome.DisabledGreen)
+            // Shaped background rather than `clip`: see the note at the top of this file.
+            .background(
+                color = if (enabled) AppleIIChrome.DimGreen else AppleIIChrome.DisabledGreen,
+                shape = CircleShape,
+            )
             .clickable(enabled = enabled, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
